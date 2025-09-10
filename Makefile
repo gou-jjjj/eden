@@ -1,0 +1,3 @@
+clear:
+	rm -rf ./out
+
