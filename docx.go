@@ -12,7 +12,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"flow/go_tran/translate"
+	"github.com/gou-jjjj/eden/translate"
 )
 
 // Document 代表 docx 文件中的 XML 文档结构

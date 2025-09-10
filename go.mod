@@ -1,11 +1,8 @@
-module flow/go_tran
+module github.com/gou-jjjj/eden
 
 go 1.24.4
 
-require (
-	github.com/tmc/langchaingo v0.1.13
-	golang.org/x/net v0.43.0
-)
+require github.com/tmc/langchaingo v0.1.13
 
 require (
 	github.com/dlclark/regexp2 v1.10.0 // indirect

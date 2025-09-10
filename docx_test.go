@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"flow/go_tran/translate"
+	"github.com/gou-jjjj/eden/translate"
 )
 
 func debugDelete() {
@@ -21,7 +21,7 @@ func TestNewDocxProcessor(t *testing.T) {
 	pr := NewDocxProcessor(WithLang(EN, ZH),
 		WithInput("./file_examples/zlobinski2011.docx"),
 		WithOutput("./out"),
-		WithProcessFunc(translate.NewOpenai()),
+		WithProcessFunc(translate.NewMockTran()),
 		WithMaxWords(3000),
 		WithMaxGo(1))
 

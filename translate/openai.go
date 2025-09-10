@@ -1,11 +1,11 @@
 package translate
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
-	"golang.org/x/net/context"
 )
 
 const (
