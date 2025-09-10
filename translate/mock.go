@@ -13,6 +13,10 @@ func NewMockTran() *MockTran {
 }
 
 func (t MockTran) T(r *TranReq) ([]Content, error) {
+	for i := range r.Data {
+		r.Data[i].Data = "1"
+	}
+
 	req, _ := json.Marshal(r)
 	log.Println(string(req))
 	return r.Data, nil
