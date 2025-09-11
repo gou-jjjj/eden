@@ -1,8 +1,8 @@
 package translate
 
 type Content struct {
-	Id   int    `json:"id"`
-	Data string `json:"data"`
+	Text    string   `json:"text"`
+	SubText []string `json:"subText"`
 }
 
 type TranReq struct {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"encoding/xml"
 	"html"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/beevik/etree"
+	"github.com/gou-jjjj/eden/prompt"
 )
 
 func debugDelete() {
@@ -167,4 +169,69 @@ func TestName3(t *testing.T) {
 
 	os.WriteFile("./out3.txt", []byte(builder.String()), 0644)
 
+}
+
+func TestName5(t *testing.T) {
+	var data [][]string
+	reader, err := zip.OpenReader("./file_examples/Docx4j_GettingStarted.docx")
+	if err != nil {
+		t.Log(err)
+		return
+	}
+	defer reader.Close()
+
+	for _, file := range reader.File {
+		if file.Name == "word/document.xml" {
+			rc, err := file.Open()
+			if err != nil {
+				t.Log(err)
+				return
+			}
+			defer rc.Close()
+
+			decoder := xml.NewDecoder(rc)
+			inParagraph := false
+			var row []string
+			for {
+				token, err := decoder.Token()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Log(err)
+					break
+				}
+
+				switch se := token.(type) {
+				case xml.StartElement:
+					if se.Name.Local == "p" {
+						inParagraph = true
+					} else if inParagraph && se.Name.Local == "t" {
+						// 读取文本内容
+						var text struct {
+							Content string `xml:",chardata"`
+						}
+						if err := decoder.DecodeElement(&text, &se); err == nil {
+							row = append(row, text.Content)
+						}
+					}
+				case xml.EndElement:
+					if se.Name.Local == "p" && inParagraph {
+						// 段落结束，写入内容并换行
+						data = append(data, row)
+						row = make([]string, 0)
+						inParagraph = false
+					}
+				}
+			}
+		}
+	}
+
+	marshal, _ := json.Marshal(data)
+	os.WriteFile("./out4.txt", marshal, 0644)
+}
+
+func TestName11(t *testing.T) {
+	translatePrompt := prompt.TranslatePrompt("", "english")
+	t.Log(translatePrompt)
 }
