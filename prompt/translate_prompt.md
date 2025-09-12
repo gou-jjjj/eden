@@ -2,20 +2,14 @@
 
 ```json
 [
-  {
-    "text": "{text content1}",
-    "subText": [
-      "{subtext1}",
-      "{subtext2}"
-    ]
-  },
-  {
-    "text": "{text content2}",
-    "subText": [
-      "{subtext1}",
-      "{subtext2}"
-    ]
-  }
+  [
+    "{subtext1}",
+    "{subtext2}"
+  ],
+  [
+    "{subtext1}",
+    "{subtext2}"
+  ]
 ]
 ```
 
@@ -23,20 +17,14 @@
 
 ```json
 [
-  {
-    "text": "{translated text content1}",
-    "subText": [
-      "{translated subtext1}",
-      "{translated subtext2}"
-    ]
-  },
-  {
-    "text": "{translated text content2}",
-    "subText": [
-      "{translated subtext1}",
-      "{translated subtext2}"
-    ]
-  }
+  [
+    "{translated subtext1}",
+    "{translated subtext2}"
+  ],
+  [
+    "{translated subtext1}",
+    "{translated subtext2}"
+  ]
 ]
 ```
 

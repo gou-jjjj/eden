@@ -1,18 +1,15 @@
 package translate
 
-type Content struct {
-	Text    string   `json:"text"`
-	SubText []string `json:"subText"`
-}
+type Paragraph []string
 
 type TranReq struct {
-	From string    `json:"from"`
-	To   string    `json:"to"`
-	Data []Content `json:"data"`
+	From  string      `json:"from"`
+	To    string      `json:"to"`
+	Paras []Paragraph `json:"paras"`
 }
 
 type Translate interface {
-	T(*TranReq) ([]Content, error)
+	T(*TranReq) ([]Paragraph, error)
 }
 
 const (

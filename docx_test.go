@@ -14,6 +14,7 @@ import (
 
 	"github.com/beevik/etree"
 	"github.com/gou-jjjj/eden/prompt"
+	"github.com/gou-jjjj/eden/translate"
 )
 
 func debugDelete() {
@@ -23,25 +24,25 @@ func debugDelete() {
 	}
 }
 
-//func TestNewDocxProcessor(t *testing.T) {
-//	debugDelete()
-//
-//	pr := NewDocxProcessor(WithLang(EN, ZH),
-//		WithInput("./file_examples/zlobinski2011.docx"),
-//		WithOutput("./out"),
-//		WithProcessFunc(translate.NewMockTran()),
-//		WithMaxWords(3000),
-//		WithMaxGo(1))
-//
-//	err := pr.Process()
-//	if err != nil {
-//		t.Error(err)
-//	}
-//}
+func TestNewDocxProcessor(t *testing.T) {
+	debugDelete()
+
+	pr := NewDocxProcessor(WithLang(EN, ZH),
+		WithInput("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Docx4j_GettingStarted.docx"),
+		WithOutput("./out"),
+		WithProcessFunc(translate.NewOpenai()),
+		WithMaxWords(3000),
+		WithMaxGo(1))
+
+	err := pr.Process()
+	if err != nil {
+		t.Error(err)
+	}
+}
 
 func TestName(t *testing.T) {
 	// ... (打开 zip，读取 document.xml 数据)
-	reader, err := zip.OpenReader("./file_examples/zlobinski2011.docx")
+	reader, err := zip.OpenReader("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Docx4j_GettingStarted.docx")
 	if err != nil {
 		t.Log(err)
 		return
@@ -173,7 +174,7 @@ func TestName3(t *testing.T) {
 
 func TestName5(t *testing.T) {
 	var data [][]string
-	reader, err := zip.OpenReader("./file_examples/Docx4j_GettingStarted.docx")
+	reader, err := zip.OpenReader("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Docx4j_GettingStarted.docx")
 	if err != nil {
 		t.Log(err)
 		return
@@ -232,6 +233,6 @@ func TestName5(t *testing.T) {
 }
 
 func TestName11(t *testing.T) {
-	translatePrompt := prompt.TranslatePrompt("", "english")
+	translatePrompt := prompt.TranslatePrompt("english", "chinese")
 	t.Log(translatePrompt)
 }

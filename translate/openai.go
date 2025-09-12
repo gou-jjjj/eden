@@ -31,7 +31,7 @@ func NewOpenai() *TranOpenai {
 	return &TranOpenai{}
 }
 
-func (t *TranOpenai) T(req *TranReq) ([]Content, error) {
+func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
 	ctx := context.Background()
 	llm, err := openai.New(
 		openai.WithBaseURL(apiURL),
@@ -54,7 +54,7 @@ func (t *TranOpenai) T(req *TranReq) ([]Content, error) {
 		return nil, err
 	}
 
-	var res []Content
+	var res []Paragraph
 	err = json.Unmarshal([]byte(generateContent.Choices[0].Content), &res)
 	if err != nil {
 		return nil, err

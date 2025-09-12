@@ -2,6 +2,7 @@ package translate
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -12,12 +13,14 @@ func NewMockTran() *MockTran {
 	return &MockTran{}
 }
 
-func (t MockTran) T(r *TranReq) ([]Content, error) {
-	for i := range r.Data {
-		r.Data[i].Data = "1"
+func (t MockTran) T(r *TranReq) ([]Paragraph, error) {
+	for i := range r.Paras {
+		for i2 := range r.Paras[i] {
+			r.Paras[i][i2] = fmt.Sprintf("%d_%d", i, i2)
+		}
 	}
 
 	req, _ := json.Marshal(r)
 	log.Println(string(req))
-	return r.Data, nil
+	return r.Paras, nil
 }

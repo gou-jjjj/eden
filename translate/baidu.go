@@ -20,7 +20,7 @@ func NewBaidu(domain, appid, appkey string) *Baidu {
 	}
 }
 
-func (b *Baidu) T(req TranReq) ([]Content, error) {
+func (b *Baidu) T(req *TranReq) ([]Paragraph, error) {
 	return nil, nil
 	//contents := make([]Content, len(req.Data))
 	//
