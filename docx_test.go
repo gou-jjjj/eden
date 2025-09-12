@@ -31,8 +31,8 @@ func TestNewDocxProcessor(t *testing.T) {
 		WithInput("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
 		WithProcessFunc(translate.NewOpenai()),
-		WithMaxWords(3000),
-		WithMaxGo(1))
+		WithMaxWords(5000),
+		WithMaxGo(3))
 
 	err := pr.Process()
 	if err != nil {
@@ -233,6 +233,6 @@ func TestName5(t *testing.T) {
 }
 
 func TestName11(t *testing.T) {
-	translatePrompt := prompt.TranslatePrompt("english", "chinese")
+	translatePrompt := prompt.TranslatePrompt("english", "chinese", "101")
 	t.Log(translatePrompt)
 }

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gou-jjjj/eden/translate"
@@ -215,7 +216,10 @@ func (p *DocxProcessor) ProcessText(contents []translate.Paragraph) []translate.
 	maxCh := make(chan struct{}, p.maxGo)
 
 	toTran := func(r *translate.TranReq, start int) {
+		now := time.Now()
+		log.Printf("start to process %d paragraphs", len(r.Paras))
 		defer func() {
+			log.Printf("processed %d paragraphs in %v", len(r.Paras), time.Since(now))
 			<-maxCh
 			p.wg.Done()
 		}()
@@ -395,7 +399,7 @@ func (p *DocxProcessor) Process() error {
 	if err != nil {
 		return err
 	}
-
+	log.Printf("extracted %d paragraphs", len(contents))
 	// 3. 处理文本
 	processedContent := p.ProcessText(contents)
 
