@@ -9,7 +9,7 @@ import (
 //go:embed translate_prompt.md
 var translatePrompt string
 
-func TranslatePrompt(fromLang, toLang, paraLen string) string {
+func TranslatePrompt(fromLang, toLang string) string {
 	// 解析模板
 	tmpl, err := template.New("translatePrompt").Parse(translatePrompt)
 	if err != nil {
@@ -19,7 +19,6 @@ func TranslatePrompt(fromLang, toLang, paraLen string) string {
 	data := map[string]interface{}{
 		"fromLang": fromLang,
 		"toLang":   toLang,
-		"paraLen":  paraLen,
 	}
 
 	// 执行模板，把渲染结果输出到标准输出

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/gou-jjjj/eden/prompt"
-	"github.com/spf13/cast"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
 )
@@ -17,7 +16,7 @@ const (
 
 	apiUrlV2    = "https://api.chatanywhere.tech"
 	apiKeyV2    = "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5" // 请替换为您的实际 API 密钥
-	modelNameV2 = "gpt-5-mini"
+	modelNameV2 = "gpt-5"
 )
 
 type TranOpenai struct {
@@ -34,7 +33,7 @@ func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
 		openai.WithModel(modelNameV2),
 		openai.WithToken(apiKeyV2),
 		openai.WithAPIType(openai.APITypeOpenAI),
-		openai.WithResponseFormat(openai.ResponseFormatJSON),
+		//openai.WithResponseFormat(openai.ResponseFormatJSON),
 	)
 	if err != nil {
 		return nil, err
@@ -42,7 +41,7 @@ func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
 
 	msg, _ := json.Marshal(req.Paras)
 	content := []llms.MessageContent{
-		llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To, cast.ToString(len(req.Paras)))),
+		llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To)),
 		llms.TextParts(llms.ChatMessageTypeHuman, "[[\"The following code prints Hello World:\",\"```python print('Hello World')```\"],[\"End of example.\"]]"),
 		llms.TextParts(llms.ChatMessageTypeAI, "[[\"以下代码打印 Hello World：\",\"```python print('Hello World')```\"],[\"示例结束。\"]]"),
 		llms.TextParts(llms.ChatMessageTypeHuman, string(msg)),

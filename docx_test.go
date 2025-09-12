@@ -233,6 +233,6 @@ func TestName5(t *testing.T) {
 }
 
 func TestName11(t *testing.T) {
-	translatePrompt := prompt.TranslatePrompt("english", "chinese", "101")
+	translatePrompt := prompt.TranslatePrompt("english", "chinese")
 	t.Log(translatePrompt)
 }

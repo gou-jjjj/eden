@@ -12,16 +12,14 @@
 
 # Notes:
 
-1. Keep the JSON structure unchanged and ensure the output is valid JSON.
+1. I provide you with a 2D array of length n (n >= 1), and the 2D array you return after translation must also have a length of
+   n (n >= 1). The length of each subarray is m (m >= 1), and the length of each subarray you return must also be m.
 
 2. Preserve all punctuation and special characters.
 
-3. Ensure the translation is accurate and conforms to natural %s expression.
+3. Ensure the translation is accurate and conforms to natural {{.toLang}} expression.
 
 4. Do not omit any content; ensure all text is translated.
 
-5. I provide you with a 2D array of length n (n >= 1), and the 2D array you return after translation must also have a length of
-   n (n >= 1). The length of each subarray is m (m >= 1), and the length of each subarray you return must also be m.
-
-6. If the text is special content that does not require translation, return it unchanged (for example: code, formulas,
+5. If the text is special content that does not require translation, return it unchanged (for example: code, formulas,
    etc.).
