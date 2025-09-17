@@ -3,6 +3,9 @@ package translate
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"time"
 
 	"github.com/gou-jjjj/eden/prompt"
 	"github.com/tmc/langchaingo/llms"
@@ -16,7 +19,7 @@ const (
 
 	apiUrlV2    = "https://api.chatanywhere.tech"
 	apiKeyV2    = "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5" // 请替换为您的实际 API 密钥
-	modelNameV2 = "gpt-5"
+	modelNameV2 = "deepseek-v3"
 )
 
 type TranOpenai struct {
@@ -50,6 +53,8 @@ func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	_ = os.WriteFile(fmt.Sprintf("./out_openai_%d.txt", time.Now().Unix()), []byte(generateContent.Choices[0].Content), 0644)
 
 	var res []Paragraph
 	err = json.Unmarshal([]byte(generateContent.Choices[0].Content), &res)

@@ -182,14 +182,18 @@ func (p *DocxProcessor) ExtractText() ([]translate.Paragraph, error) {
 							Content string `xml:",chardata"`
 						}
 						if err := decoder.DecodeElement(&text, &se); err == nil {
-							row = append(row, text.Content)
+							if p.langChecker != nil && !p.langChecker.Check(text.Content) {
+								row = append(row, text.Content)
+							}
 						}
 					}
 				case xml.EndElement:
 					if se.Name.Local == "p" && inParagraph {
-						// 段落结束，写入内容并换行
-						data = append(data, row)
-						row = make([]string, 0)
+						if len(row) >= 0 {
+							// 段落结束，写入内容并换行
+							data = append(data, row)
+							row = make([]string, 0)
+						}
 						inParagraph = false
 					}
 				}
@@ -231,9 +235,7 @@ func (p *DocxProcessor) ProcessText(contents []translate.Paragraph) []translate.
 		}
 
 		for idx, res := range t {
-			p.rw.Lock()
 			contents[start+idx] = res
-			p.rw.Unlock()
 		}
 	}
 
@@ -339,18 +341,20 @@ func (p *DocxProcessor) WriteChanges(translateContents []translate.Paragraph) er
 							Content string `xml:",chardata"`
 						}
 						if err := decoder.DecodeElement(&text, &se); err == nil {
-							// 替换为翻译后的内容
-							if paraIdx < len(translateContents) {
-								if textIdx < len(translateContents[paraIdx]) {
-									text.Content = translateContents[paraIdx][textIdx]
+							if p.langChecker != nil && p.langChecker.Check(text.Content) {
+								// 替换为翻译后的内容
+								if paraIdx < len(translateContents) {
+									if textIdx < len(translateContents[paraIdx]) {
+										text.Content = translateContents[paraIdx][textIdx]
+									}
 								}
+								textIdx++
+								// 写回
+								if err := encoder.EncodeElement(text, se); err != nil {
+									return fmt.Errorf("encode error: %v", err)
+								}
+								continue
 							}
-							textIdx++
-							// 写回
-							if err := encoder.EncodeElement(text, se); err != nil {
-								return fmt.Errorf("encode error: %v", err)
-							}
-							continue
 						}
 					}
 				case xml.EndElement:

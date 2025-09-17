@@ -31,7 +31,7 @@ func TestNewDocxProcessor(t *testing.T) {
 		WithInput("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
 		WithProcessFunc(translate.NewOpenai()),
-		WithMaxWords(5000),
+		WithMaxWords(10000),
 		WithMaxGo(3))
 
 	err := pr.Process()
