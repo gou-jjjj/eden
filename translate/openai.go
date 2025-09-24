@@ -13,28 +13,41 @@ import (
 )
 
 const (
-	apiURL    = "https://open.bigmodel.cn/api/paas/v4"
-	apiKey    = "23c650b6b73d4b1b80500699edcbf87c.qU9lcBTeGfku2gKz" // 请替换为您的实际 API 密钥
-	modelName = "glm-4-plus"
-
-	apiUrlV2    = "https://api.chatanywhere.tech"
-	apiKeyV2    = "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5" // 请替换为您的实际 API 密钥
-	modelNameV2 = "deepseek-v3"
+	ZhiPu      = "zhipu"
+	GithubFree = "githubfree"
+	OpenRouter = "openrouter"
 )
 
-type TranOpenai struct {
+var OpenaiModelList = map[string]struct {
+	Url   string
+	Key   string
+	Model string
+}{
+	ZhiPu:      {"https://open.bigmodel.cn/api/paas/v4", "23c650b6b73d4b1b80500699edcbf87c.qU9lcBTeGfku2gKz", "glm-4-plus"},
+	GithubFree: {"https://api.chatanywhere.tech", "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5", "deepseek-v3"},
+	OpenRouter: {"https://openrouter.ai/api/v1", "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", "x-ai/grok-4-fast:free"},
 }
 
-func NewOpenai() *TranOpenai {
-	return &TranOpenai{}
+type TranOpenai struct {
+	url   string
+	key   string
+	model string
+}
+
+func NewOpenai(url, key, model string) *TranOpenai {
+	return &TranOpenai{
+		url:   url,
+		key:   key,
+		model: model,
+	}
 }
 
 func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
 	ctx := context.Background()
 	llm, err := openai.New(
-		openai.WithBaseURL(apiUrlV2),
-		openai.WithModel(modelNameV2),
-		openai.WithToken(apiKeyV2),
+		openai.WithBaseURL(t.url),
+		openai.WithModel(t.model),
+		openai.WithToken(t.key),
 		openai.WithAPIType(openai.APITypeOpenAI),
 		//openai.WithResponseFormat(openai.ResponseFormatJSON),
 	)

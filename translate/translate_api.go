@@ -22,7 +22,4 @@ const (
 
 var TranslateSet = map[string]Translate{
 	//BaiDu: NewBaidu("http://api.fanyi.baidu.com/api/trans/vip/translate", "20220422001184836", "kRMl9t9LwAn7EFCLibz0"),
-
-	//ai
-	OpenAI: NewOpenai(),
 }

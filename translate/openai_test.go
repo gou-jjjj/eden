@@ -27,7 +27,12 @@ func TestTranOpenai_T(t1 *testing.T) {
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
-			t := &TranOpenai{}
+			s := OpenaiModelList[OpenRouter]
+			t := &TranOpenai{
+				url:   s.Url,
+				key:   s.Key,
+				model: s.Model,
+			}
 			got, err := t.T(tt.args.req)
 			if err != nil {
 				t1.Errorf("TranOpenai.T() error = %v", err)
