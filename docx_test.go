@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -34,8 +35,9 @@ func TestNewDocxProcessor(t *testing.T) {
 	}
 }
 
-func TestName112(t *testing.T) {
-	doc, err := document.Open("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/dxusercu_374966c9c16afa528c7cbed0ad763b12.docx")
+func TestContent(t *testing.T) {
+	const path = "/Users/calvin/go/src/eden/file_examples/zlobinski2011.docx"
+	doc, err := document.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,38 +49,10 @@ func TestName112(t *testing.T) {
 
 	// 检查段落详情
 	for _, para := range doc.Paragraphs() {
-		paras := make([]string, 0, len(para.Runs()))
-		c := false
 		for _, run := range para.Runs() {
-			if run.Text() != "" {
-				c = true
-			}
-			paras = append(paras, run.Text())
-			run.ClearContent()
+			fmt.Print(run.Text())
 		}
-
-		if !c {
-			continue
-		}
-
-		openai := translate.NewOpenai(translate.OpenRouter)
-		paras, err = openai.T(&translate.TranReq{
-			From:  lang.ZH,
-			To:    lang.EN,
-			Paras: paras,
-		})
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		for i, run := range para.Runs() {
-			run.AddText(paras[i])
-		}
-	}
-	err = doc.SaveToFile("./out.docx")
-	if err != nil {
-		t.Error(err)
+		fmt.Println()
 	}
 }
 
