@@ -3,13 +3,13 @@ package translate
 type Paragraph []string
 
 type TranReq struct {
-	From  string      `json:"from"`
-	To    string      `json:"to"`
-	Paras []Paragraph `json:"paras"`
+	From  string    `json:"from"`
+	To    string    `json:"to"`
+	Paras Paragraph `json:"paras"`
 }
 
 type Translate interface {
-	T(*TranReq) ([]Paragraph, error)
+	T(*TranReq) (Paragraph, error)
 }
 
 const (

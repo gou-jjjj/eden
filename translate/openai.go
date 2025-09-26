@@ -2,11 +2,12 @@ package translate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/gou-jjjj/eden/lang"
 	"github.com/gou-jjjj/eden/prompt"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
@@ -16,6 +17,8 @@ const (
 	ZhiPu      = "zhipu"
 	GithubFree = "githubfree"
 	OpenRouter = "openrouter"
+
+	seq = "\n---\n"
 )
 
 var OpenaiModelList = map[string]struct {
@@ -42,26 +45,21 @@ func NewOpenai(url, key, model string) *TranOpenai {
 	}
 }
 
-func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
+func (t *TranOpenai) T(req *TranReq) (Paragraph, error) {
 	ctx := context.Background()
 	llm, err := openai.New(
 		openai.WithBaseURL(t.url),
 		openai.WithModel(t.model),
 		openai.WithToken(t.key),
 		openai.WithAPIType(openai.APITypeOpenAI),
-		//openai.WithResponseFormat(openai.ResponseFormatJSON),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	msg, _ := json.Marshal(req.Paras)
-	content := []llms.MessageContent{
-		llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To)),
-		llms.TextParts(llms.ChatMessageTypeHuman, "[[\"The following code prints Hello World:\",\"```python print('Hello World')```\"],[\"End of example.\"]]"),
-		llms.TextParts(llms.ChatMessageTypeAI, "[[\"以下代码打印 Hello World：\",\"```python print('Hello World')```\"],[\"示例结束。\"]]"),
-		llms.TextParts(llms.ChatMessageTypeHuman, string(msg)),
-	}
+	msgs := samplePrompt[getLangKey(lang.ZH, lang.EN)]
+	content := append([]llms.MessageContent{llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To))}, msgs...)
+	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, strings.Join(req.Paras, seq)))
 	generateContent, err := llm.GenerateContent(ctx, content)
 	if err != nil {
 		return nil, err
@@ -69,11 +67,17 @@ func (t *TranOpenai) T(req *TranReq) ([]Paragraph, error) {
 
 	_ = os.WriteFile(fmt.Sprintf("./out_openai_%d.txt", time.Now().Unix()), []byte(generateContent.Choices[0].Content), 0644)
 
-	var res []Paragraph
-	err = json.Unmarshal([]byte(generateContent.Choices[0].Content), &res)
-	if err != nil {
-		return nil, err
-	}
-
+	res := strings.Split(generateContent.Choices[0].Content, seq)
 	return res, nil
+}
+
+func getLangKey(form, to string) string {
+	return fmt.Sprintf("%s_%s", form, to)
+}
+
+var samplePrompt = map[string][]llms.MessageContent{
+	getLangKey(lang.ZH, lang.EN): {
+		llms.TextParts(llms.ChatMessageTypeHuman, "To run the program, use: `python main.py --input data.json`\n---\nThis will process the dataset and generate\n---\noutput files in `/results/` directory by 5PM EST."),
+		llms.TextParts(llms.ChatMessageTypeAI, "要运行程序，请使用：`python main.py --input data.json`\n---\n这将处理数据集并生成\n---\n输出文件到`/results/`目录，截止东部时间下午5点。"),
+	},
 }

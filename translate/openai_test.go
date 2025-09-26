@@ -2,6 +2,8 @@ package translate
 
 import (
 	"testing"
+
+	"github.com/gou-jjjj/eden/lang"
 )
 
 func TestTranOpenai_T(t1 *testing.T) {
@@ -16,10 +18,14 @@ func TestTranOpenai_T(t1 *testing.T) {
 			name: "test1",
 			args: args{
 				req: &TranReq{
-					From: "English",
-					To:   "Chinese",
-					Paras: []Paragraph{
-						{"we are happy."},
+					From: lang.EN,
+					To:   lang.ZH,
+					Paras: Paragraph{
+						"Hello, how are you?",
+						"Today is a sunny day.",
+						"OpenAI provides powerful AI models.",
+						"Let's translate these sentences.",
+						"Testing the translation functionality.",
 					},
 				},
 			},
