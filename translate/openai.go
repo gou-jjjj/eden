@@ -37,11 +37,16 @@ type TranOpenai struct {
 	model string
 }
 
-func NewOpenai(url, key, model string) *TranOpenai {
+func NewOpenai(llmSource string) *TranOpenai {
+	s, ok := OpenaiModelList[llmSource]
+	if !ok {
+		return nil
+	}
+
 	return &TranOpenai{
-		url:   url,
-		key:   key,
-		model: model,
+		url:   s.Url,
+		key:   s.Key,
+		model: s.Model,
 	}
 }
 
@@ -77,6 +82,10 @@ func getLangKey(form, to string) string {
 
 var samplePrompt = map[string][]llms.MessageContent{
 	getLangKey(lang.ZH, lang.EN): {
+		llms.TextParts(llms.ChatMessageTypeHuman, "要运行程序，请使用：`python main.py --input data.json`\n---\n这将处理数据集并生成\n---\n输出文件到`/results/`目录，截止东部时间下午5点。"),
+		llms.TextParts(llms.ChatMessageTypeAI, "To run the program, use: `python main.py --input data.json`\n---\nThis will process the dataset and generate\n---\noutput files in `/results/` directory by 5PM EST."),
+	},
+	getLangKey(lang.EN, lang.ZH): {
 		llms.TextParts(llms.ChatMessageTypeHuman, "To run the program, use: `python main.py --input data.json`\n---\nThis will process the dataset and generate\n---\noutput files in `/results/` directory by 5PM EST."),
 		llms.TextParts(llms.ChatMessageTypeAI, "要运行程序，请使用：`python main.py --input data.json`\n---\n这将处理数据集并生成\n---\n输出文件到`/results/`目录，截止东部时间下午5点。"),
 	},

@@ -4,6 +4,8 @@ import "unicode"
 
 // 语言代码常量
 const (
+	All = "Other languages" // 所有语言
+
 	ZH = "Chinese"  // 中文
 	EN = "English"  // 英文
 	JA = "Japanese" // 日文
@@ -12,6 +14,16 @@ const (
 	AR = "Arabic"   // 阿拉伯文
 	EL = "Greek"    // 希腊文
 )
+
+var LangNames = map[string]string{
+	ZH: "中文",
+	EN: "英文",
+	JA: "日文",
+	KO: "韩文",
+	RU: "俄文",
+	AR: "阿拉伯文",
+	EL: "希腊文",
+}
 
 // LanguageChecker 语言检查器接口
 type LanguageChecker interface {

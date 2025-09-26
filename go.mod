@@ -3,8 +3,7 @@ module github.com/gou-jjjj/eden
 go 1.24.4
 
 require (
-	github.com/beevik/etree v1.6.0
-	github.com/spf13/cast v1.3.1
+	github.com/panjf2000/ants v1.3.0
 	github.com/tmc/langchaingo v0.1.13
 	github.com/unidoc/unioffice v1.39.0
 )
