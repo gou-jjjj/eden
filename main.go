@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gou-jjjj/eden/translate"
-	"github.com/unidoc/unioffice/document"
+	"github.com/gou-jjjj/unioffice/document"
 )
 
 func main() {

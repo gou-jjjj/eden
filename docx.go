@@ -9,8 +9,8 @@ import (
 
 	"github.com/gou-jjjj/eden/lang"
 	"github.com/gou-jjjj/eden/translate"
+	"github.com/gou-jjjj/unioffice/document"
 	"github.com/panjf2000/ants"
-	"github.com/unidoc/unioffice/document"
 )
 
 // 选项函数类型

@@ -8,7 +8,7 @@ import (
 	"github.com/gou-jjjj/eden/lang"
 	"github.com/gou-jjjj/eden/prompt"
 	"github.com/gou-jjjj/eden/translate"
-	"github.com/unidoc/unioffice/document"
+	"github.com/gou-jjjj/unioffice/document"
 )
 
 func debugDelete() {
