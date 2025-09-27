@@ -33,9 +33,10 @@ type TranOpenai struct {
 	url   string
 	key   string
 	model string
+	back  *TranOpenai
 }
 
-func NewOpenai(llmSource string) *TranOpenai {
+func NewOpenai(llmSource string, backTranOpenai ...*TranOpenai) *TranOpenai {
 	s, ok := OpenaiModelList[llmSource]
 	if !ok {
 		return nil
@@ -45,6 +46,12 @@ func NewOpenai(llmSource string) *TranOpenai {
 		url:   s.Url,
 		key:   s.Key,
 		model: s.Model,
+		back: func() *TranOpenai {
+			if len(backTranOpenai) > 0 {
+				return backTranOpenai[0]
+			}
+			return nil
+		}(),
 	}
 }
 
