@@ -57,7 +57,7 @@ func WithMaxGo(maxGo int) Opt {
 	}
 }
 
-func WithLogger(logger *logger.Logger) Opt {
+func WithLogger(logger *logger.DocxLogger) Opt {
 	return func(p *DocxProcessor) {
 		p.logger = logger
 	}
@@ -78,7 +78,7 @@ type DocxProcessor struct {
 	maxGo       int
 	process     translate.Translate
 	langChecker lang.LanguageChecker
-	logger      *logger.Logger
+	logger      *logger.DocxLogger
 
 	rw sync.Mutex
 	wg sync.WaitGroup

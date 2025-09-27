@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+// Logger 日志接口
+type Logger interface {
+	Debug(format string, args ...interface{})
+	Info(format string, args ...interface{})
+	Warn(format string, args ...interface{})
+	Error(format string, args ...interface{})
+}
+
 // LogLevel 日志级别
 type LogLevel int
 
@@ -18,8 +26,8 @@ const (
 	ERROR
 )
 
-// Logger 日志记录器
-type Logger struct {
+// DocxLogger 日志记录器
+type DocxLogger struct {
 	needStdio bool
 	filePath  string
 	file      *os.File
@@ -28,7 +36,7 @@ type Logger struct {
 }
 
 // NewLogger 创建新的日志记录器
-func NewLogger(needStdio bool, outputDir, fileName string) (*Logger, error) {
+func NewLogger(needStdio bool, outputDir, fileName string) (*DocxLogger, error) {
 	// 确保输出目录存在
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return nil, fmt.Errorf("创建日志目录失败: %v", err)
@@ -45,7 +53,7 @@ func NewLogger(needStdio bool, outputDir, fileName string) (*Logger, error) {
 		return nil, fmt.Errorf("创建日志文件失败: %v", err)
 	}
 
-	return &Logger{
+	return &DocxLogger{
 		filePath:  filePath,
 		file:      file,
 		level:     INFO,
@@ -54,14 +62,14 @@ func NewLogger(needStdio bool, outputDir, fileName string) (*Logger, error) {
 }
 
 // SetLevel 设置日志级别
-func (l *Logger) SetLevel(level LogLevel) {
+func (l *DocxLogger) SetLevel(level LogLevel) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.level = level
 }
 
 // writeLog 写入日志的内部方法
-func (l *Logger) writeLog(level LogLevel, format string, args ...interface{}) {
+func (l *DocxLogger) writeLog(level LogLevel, format string, args ...interface{}) {
 	if level < l.level {
 		return
 	}
@@ -101,27 +109,27 @@ func (l *Logger) writeLog(level LogLevel, format string, args ...interface{}) {
 }
 
 // Debug 记录调试信息
-func (l *Logger) Debug(format string, args ...interface{}) {
+func (l *DocxLogger) Debug(format string, args ...interface{}) {
 	l.writeLog(DEBUG, format, args...)
 }
 
 // Info 记录一般信息
-func (l *Logger) Info(format string, args ...interface{}) {
+func (l *DocxLogger) Info(format string, args ...interface{}) {
 	l.writeLog(INFO, format, args...)
 }
 
 // Warn 记录警告信息
-func (l *Logger) Warn(format string, args ...interface{}) {
+func (l *DocxLogger) Warn(format string, args ...interface{}) {
 	l.writeLog(WARN, format, args...)
 }
 
 // Error 记录错误信息
-func (l *Logger) Error(format string, args ...interface{}) {
+func (l *DocxLogger) Error(format string, args ...interface{}) {
 	l.writeLog(ERROR, format, args...)
 }
 
 // LogTranslationStart 记录翻译开始
-func (l *Logger) LogTranslationStart(inputPath, fromLang, toLang string) {
+func (l *DocxLogger) LogTranslationStart(inputPath, fromLang, toLang string) {
 	l.Info("=== 翻译任务开始 ===")
 	l.Info("输入文件: %s", inputPath)
 	l.Info("源语言: %s", fromLang)
@@ -130,7 +138,7 @@ func (l *Logger) LogTranslationStart(inputPath, fromLang, toLang string) {
 }
 
 // LogTranslationEnd 记录翻译结束
-func (l *Logger) LogTranslationEnd(outputPath string, success bool, duration time.Duration) {
+func (l *DocxLogger) LogTranslationEnd(outputPath string, success bool, duration time.Duration) {
 	if success {
 		l.Info("=== 翻译任务完成 ===")
 		l.Info("输出文件: %s", outputPath)
@@ -144,7 +152,7 @@ func (l *Logger) LogTranslationEnd(outputPath string, success bool, duration tim
 }
 
 // LogFileLoad 记录文件加载
-func (l *Logger) LogFileLoad(success bool, filePath string, err error) {
+func (l *DocxLogger) LogFileLoad(success bool, filePath string, err error) {
 	if success {
 		l.Info("文件加载成功: %s", filePath)
 	} else {
@@ -153,14 +161,14 @@ func (l *Logger) LogFileLoad(success bool, filePath string, err error) {
 }
 
 // LogTextExtraction 记录文本提取
-func (l *Logger) LogTextExtraction(paragraphCount, tableCount int) {
+func (l *DocxLogger) LogTextExtraction(paragraphCount, tableCount int) {
 	l.Info("文本提取完成")
 	l.Info("段落数量: %d", paragraphCount)
 	l.Info("表格数量: %d", tableCount)
 }
 
 // LogParagraphProcessing 记录段落处理
-func (l *Logger) LogParagraphProcessing(paragraphIndex int, originalText string, needTranslation bool) {
+func (l *DocxLogger) LogParagraphProcessing(paragraphIndex int, originalText string, needTranslation bool) {
 	if needTranslation {
 		l.Debug("段落 %d [%s]", paragraphIndex, originalText)
 	} else {
@@ -169,13 +177,13 @@ func (l *Logger) LogParagraphProcessing(paragraphIndex int, originalText string,
 }
 
 // LogTranslationRequest 记录翻译请求
-func (l *Logger) LogTranslationRequest(paragraphIndex int, fromLang, toLang string, text string) {
+func (l *DocxLogger) LogTranslationRequest(paragraphIndex int, fromLang, toLang string, text string) {
 	l.Info("发送翻译请求 - 段落 %d", paragraphIndex)
 	l.Debug("翻译内容: %s", text)
 }
 
 // LogTranslationResponse 记录翻译响应
-func (l *Logger) LogTranslationResponse(paragraphIndex int, success bool, translatedText string, err error) {
+func (l *DocxLogger) LogTranslationResponse(paragraphIndex int, success bool, translatedText string, err error) {
 	if success {
 		l.Info("翻译完成 - 段落 %d", paragraphIndex)
 		l.Debug("翻译结果: %s", translatedText)
@@ -185,7 +193,7 @@ func (l *Logger) LogTranslationResponse(paragraphIndex int, success bool, transl
 }
 
 // LogFileSave 记录文件保存
-func (l *Logger) LogFileSave(success bool, outputPath string, err error) {
+func (l *DocxLogger) LogFileSave(success bool, outputPath string, err error) {
 	if success {
 		l.Info("文件保存成功: %s", outputPath)
 	} else {
@@ -194,7 +202,7 @@ func (l *Logger) LogFileSave(success bool, outputPath string, err error) {
 }
 
 // LogStatistics 记录统计信息
-func (l *Logger) LogStatistics(totalParagraphs, translatedParagraphs, skippedParagraphs int) {
+func (l *DocxLogger) LogStatistics(totalParagraphs, translatedParagraphs, skippedParagraphs int) {
 	l.Info("=== 翻译统计 ===")
 	l.Info("总段落数: %d", totalParagraphs)
 	l.Info("已翻译: %d", translatedParagraphs)
@@ -203,7 +211,7 @@ func (l *Logger) LogStatistics(totalParagraphs, translatedParagraphs, skippedPar
 }
 
 // Close 关闭日志记录器
-func (l *Logger) Close() error {
+func (l *DocxLogger) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -215,6 +223,6 @@ func (l *Logger) Close() error {
 }
 
 // GetLogFilePath 获取日志文件路径
-func (l *Logger) GetLogFilePath() string {
+func (l *DocxLogger) GetLogFilePath() string {
 	return l.filePath
 }

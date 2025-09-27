@@ -29,12 +29,14 @@ func TestNewDocxProcessor(t *testing.T) {
 		return
 	}
 	newLogger.SetLevel(logger.DEBUG)
+	zhipi := translate.NewOpenai(translate.ZhiPu)
+
 	pr := NewDocxProcessor(
-		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"),
+		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\zlobinski2011.docx"),
 		WithOutput("./out"),
-		WithLang(lang.All, lang.EN),
-		WithProcessFunc(translate.NewOpenai(translate.OpenRouter)),
-		WithMaxGo(1),
+		WithLang(lang.EN, lang.ZH),
+		WithProcessFunc(translate.NewOpenai(translate.OpenRouter, zhipi)),
+		WithMaxGo(2),
 		WithLogger(newLogger))
 
 	err = pr.Process()

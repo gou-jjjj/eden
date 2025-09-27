@@ -3,9 +3,13 @@ package translate
 import (
 	"context"
 	"fmt"
+	"math"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/gou-jjjj/eden/lang"
+	"github.com/gou-jjjj/eden/logger"
 	"github.com/gou-jjjj/eden/prompt"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
@@ -19,6 +23,22 @@ const (
 	seq = "\n---\n"
 )
 
+// RetryConfig 重试配置
+type RetryConfig struct {
+	MaxRetries    int           // 最大重试次数
+	BaseDelay     time.Duration // 基础延迟时间
+	MaxDelay      time.Duration // 最大延迟时间
+	BackoffFactor float64       // 退避因子
+}
+
+// DefaultRetryConfig 默认重试配置
+var DefaultRetryConfig = RetryConfig{
+	MaxRetries:    3,
+	BaseDelay:     time.Second,
+	MaxDelay:      30 * time.Second,
+	BackoffFactor: 2.0,
+}
+
 var OpenaiModelList = map[string]struct {
 	Url   string
 	Key   string
@@ -30,10 +50,12 @@ var OpenaiModelList = map[string]struct {
 }
 
 type TranOpenai struct {
-	url   string
-	key   string
-	model string
-	back  *TranOpenai
+	url         string
+	key         string
+	model       string
+	back        *TranOpenai
+	retryConfig RetryConfig
+	logger      logger.Logger
 }
 
 func NewOpenai(llmSource string, backTranOpenai ...*TranOpenai) *TranOpenai {
@@ -43,9 +65,10 @@ func NewOpenai(llmSource string, backTranOpenai ...*TranOpenai) *TranOpenai {
 	}
 
 	return &TranOpenai{
-		url:   s.Url,
-		key:   s.Key,
-		model: s.Model,
+		url:         s.Url,
+		key:         s.Key,
+		model:       s.Model,
+		retryConfig: DefaultRetryConfig,
 		back: func() *TranOpenai {
 			if len(backTranOpenai) > 0 {
 				return backTranOpenai[0]
@@ -55,7 +78,195 @@ func NewOpenai(llmSource string, backTranOpenai ...*TranOpenai) *TranOpenai {
 	}
 }
 
-func (t *TranOpenai) T(req *TranReq) (Paragraph, error) {
+// NewOpenaiWithRetry 创建带自定义重试配置的OpenAI翻译器
+func NewOpenaiWithRetry(llmSource string, retryConfig RetryConfig, backTranOpenai ...*TranOpenai) *TranOpenai {
+	s, ok := OpenaiModelList[llmSource]
+	if !ok {
+		return nil
+	}
+
+	return &TranOpenai{
+		url:         s.Url,
+		key:         s.Key,
+		model:       s.Model,
+		retryConfig: retryConfig,
+		back: func() *TranOpenai {
+			if len(backTranOpenai) > 0 {
+				return backTranOpenai[0]
+			}
+			return nil
+		}(),
+	}
+}
+
+// NewOpenaiWithLogger 创建带日志记录器的OpenAI翻译器
+func NewOpenaiWithLogger(llmSource string, logger logger.Logger, backTranOpenai ...*TranOpenai) *TranOpenai {
+	s, ok := OpenaiModelList[llmSource]
+	if !ok {
+		return nil
+	}
+
+	return &TranOpenai{
+		url:         s.Url,
+		key:         s.Key,
+		model:       s.Model,
+		retryConfig: DefaultRetryConfig,
+		logger:      logger,
+		back: func() *TranOpenai {
+			if len(backTranOpenai) > 0 {
+				return backTranOpenai[0]
+			}
+			return nil
+		}(),
+	}
+}
+
+// NewOpenaiWithRetryAndLogger 创建带自定义重试配置和日志记录器的OpenAI翻译器
+func NewOpenaiWithRetryAndLogger(llmSource string, retryConfig RetryConfig, logger logger.Logger, backTranOpenai ...*TranOpenai) *TranOpenai {
+	s, ok := OpenaiModelList[llmSource]
+	if !ok {
+		return nil
+	}
+
+	return &TranOpenai{
+		url:         s.Url,
+		key:         s.Key,
+		model:       s.Model,
+		retryConfig: retryConfig,
+		logger:      logger,
+		back: func() *TranOpenai {
+			if len(backTranOpenai) > 0 {
+				return backTranOpenai[0]
+			}
+			return nil
+		}(),
+	}
+}
+
+// isRetryableError 判断错误是否可重试
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// 网络相关错误
+	if netErr, ok := err.(net.Error); ok {
+		return netErr.Temporary() || netErr.Timeout()
+	}
+
+	// 检查错误字符串中的常见可重试错误
+	errStr := strings.ToLower(err.Error())
+	retryablePatterns := []string{
+		"timeout",
+		"connection refused",
+		"connection reset",
+		"network is unreachable",
+		"temporary failure",
+		"rate limit",
+		"too many requests",
+		"service unavailable",
+		"internal server error",
+		"bad gateway",
+		"gateway timeout",
+		"temporary",
+		"retry",
+	}
+
+	for _, pattern := range retryablePatterns {
+		if strings.Contains(errStr, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// calculateDelay 计算重试延迟时间（指数退避）
+func (t *TranOpenai) calculateDelay(attempt int) time.Duration {
+	delay := float64(t.retryConfig.BaseDelay) * math.Pow(t.retryConfig.BackoffFactor, float64(attempt))
+	if delay > float64(t.retryConfig.MaxDelay) {
+		delay = float64(t.retryConfig.MaxDelay)
+	}
+	return time.Duration(delay)
+}
+
+// translateWithRetry 带重试的翻译方法
+func (t *TranOpenai) translateWithRetry(req *TranReq) (Paragraph, error) {
+	var lastErr error
+
+	for attempt := 0; attempt <= t.retryConfig.MaxRetries; attempt++ {
+		// 如果不是第一次尝试，等待一段时间
+		if attempt > 0 {
+			delay := t.calculateDelay(attempt - 1)
+			if t.logger != nil {
+				t.logger.Debug("重试翻译，第 %d 次尝试，等待 %v", attempt, delay)
+			}
+			time.Sleep(delay)
+		}
+
+		// 记录翻译尝试
+		if t.logger != nil {
+			if attempt == 0 {
+				t.logger.Debug("开始翻译请求")
+			} else {
+				t.logger.Debug("重试翻译，第 %d 次尝试", attempt)
+			}
+		}
+
+		// 尝试翻译
+		result, err := t.performTranslation(req)
+		if err == nil {
+			if t.logger != nil {
+				if attempt > 0 {
+					t.logger.Info("翻译重试成功，第 %d 次尝试", attempt)
+				} else {
+					t.logger.Debug("翻译成功")
+				}
+			}
+			return result, nil
+		}
+
+		lastErr = err
+
+		// 记录错误
+		if t.logger != nil {
+			t.logger.Warn("翻译失败，第 %d 次尝试，错误: %v", attempt+1, err)
+		}
+
+		// 检查是否应该重试
+		if !isRetryableError(err) {
+			if t.logger != nil {
+				t.logger.Warn("错误不可重试，停止重试: %v", err)
+			}
+			break
+		}
+
+		// 如果还有重试机会，继续
+		if attempt < t.retryConfig.MaxRetries {
+			if t.logger != nil {
+				t.logger.Info("错误可重试，准备重试，剩余重试次数: %d", t.retryConfig.MaxRetries-attempt)
+			}
+			continue
+		}
+	}
+
+	// 如果所有重试都失败了，尝试备用翻译器
+	if t.back != nil {
+		if t.logger != nil {
+			t.logger.Info("所有重试失败，尝试备用翻译器")
+		}
+		return t.back.T(req)
+	}
+
+	if t.logger != nil {
+		t.logger.Error("翻译失败，已用尽所有重试次数，最后错误: %v", lastErr)
+	}
+
+	return nil, lastErr
+}
+
+// performTranslation 执行实际的翻译操作
+func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 	ctx := context.Background()
 	llm, err := openai.New(
 		openai.WithBaseURL(t.url),
@@ -75,8 +286,16 @@ func (t *TranOpenai) T(req *TranReq) (Paragraph, error) {
 		return nil, err
 	}
 
+	if len(generateContent.Choices) == 0 {
+		return nil, fmt.Errorf("no response choices returned from API")
+	}
+
 	res := strings.Split(generateContent.Choices[0].Content, seq)
 	return res, nil
+}
+
+func (t *TranOpenai) T(req *TranReq) (Paragraph, error) {
+	return t.translateWithRetry(req)
 }
 
 func (t *TranOpenai) Name() string {
