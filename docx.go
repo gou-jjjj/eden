@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -90,7 +91,14 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 	p.paraSet = make(map[int]translate.Paragraph)
 	p.tranParaSet = make(map[int]translate.Paragraph)
 	p.langChecker = lang.LangMapChecks[p.toLang]
-	p.fileName = filepath.Base(p.fileName)
+	p.fileName = strings.Split(filepath.Base(p.inputPath), ".")[0]
+
+	_, err := os.Stat(p.outputDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			_ = os.MkdirAll(p.outputDir, os.ModePerm)
+		}
+	}
 
 	return p
 }
@@ -222,6 +230,6 @@ func (p *DocxProcessor) Process() error {
 	// 4. 写回修改
 	p.WriteChanges()
 
-	outPath := path.Join(p.outputDir, fmt.Sprintf("%s/%s_%s.docx", p.outputDir, p.fileName, p.fromLang))
+	outPath := path.Join(p.outputDir, fmt.Sprintf("%s_%s.docx", p.fileName, p.toLang))
 	return p.f.SaveToFile(outPath)
 }
