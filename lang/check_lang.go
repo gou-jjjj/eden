@@ -1,6 +1,9 @@
 package lang
 
-import "unicode"
+import (
+	"regexp"
+	"unicode"
+)
 
 // 语言代码常量
 const (
@@ -31,14 +34,28 @@ type LanguageChecker interface {
 	Name() string
 }
 
-// 基础检查函数
+// 定义一个正则表达式，匹配非字母、非文字字符（包括标点、空格、数字等）
+var nonAlphaRegex = regexp.MustCompile(`[^\p{L}]+`)
+
+// 清洗文本，只保留语言字符
+func keepOnlyLanguageLetters(s string) string {
+	// 将所有非文字字符替换为空字符串
+	return nonAlphaRegex.ReplaceAllString(s, "")
+}
+
+// 修改您原有的基础检查函数
 func isInRangeTable(content string, rangeTab *unicode.RangeTable) bool {
-	for _, word := range content {
-		if unicode.Is(rangeTab, word) {
-			return true
+	// 在检查前，先清洗文本
+	cleanedContent := keepOnlyLanguageLetters(content)
+	if cleanedContent == "" {
+		return true
+	}
+	for _, word := range cleanedContent {
+		if !unicode.Is(rangeTab, word) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 // 中文检查器
