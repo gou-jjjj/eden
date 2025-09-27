@@ -3,9 +3,7 @@ package translate
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/gou-jjjj/eden/lang"
 	"github.com/gou-jjjj/eden/prompt"
@@ -70,10 +68,12 @@ func (t *TranOpenai) T(req *TranReq) (Paragraph, error) {
 		return nil, err
 	}
 
-	_ = os.WriteFile(fmt.Sprintf("./out_openai_%d.txt", time.Now().Unix()), []byte(generateContent.Choices[0].Content), 0644)
-
 	res := strings.Split(generateContent.Choices[0].Content, seq)
 	return res, nil
+}
+
+func (t *TranOpenai) Name() string {
+	return "OpenAI"
 }
 
 func getLangKey(form, to string) string {

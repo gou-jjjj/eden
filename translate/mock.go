@@ -17,3 +17,7 @@ func (t MockTran) T(r *TranReq) (Paragraph, error) {
 	log.Println(string(req))
 	return r.Paras, nil
 }
+
+func (t MockTran) Name() string {
+	return "Mock"
+}

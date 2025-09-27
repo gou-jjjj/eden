@@ -10,6 +10,7 @@ type TranReq struct {
 
 type Translate interface {
 	T(*TranReq) (Paragraph, error)
+	Name() string
 }
 
 const (
