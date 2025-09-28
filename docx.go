@@ -176,28 +176,38 @@ func (p *DocxProcessor) ExtractText() error {
 		s.WriteString(translate.Seq)
 	}
 
-	for _, paragraph := range p.f.Paragraphs() {
+	paragraphs := p.f.Paragraphs()
+	for idx, paragraph := range paragraphs {
 		paragraphCount++
-		if len(paragraph.Runs()) == 0 {
+		runs := paragraph.Runs()
+		if len(runs) == 0 {
 			continue
 		}
 
-		for _, runs := range paragraph.Runs() {
+		for _, r := range runs {
+			text := r.Text()
 			segmentCount++
-			totalCount += len([]rune(runs.Text()))
+			totalCount += len([]rune(text))
 
 			if p.logger != nil {
-				p.logger.LogParagraphProcessing(segmentCount, runs.Text(), true)
+				p.logger.LogParagraphProcessing(segmentCount, text, true)
 			}
-			addText(&caluText, runs.Text(), false)
+			addText(&caluText, text, false)
 
 			// 检查长度
-			if len([]rune(caluText.String())) > p.maxToken {
+			if len([]rune(caluText.String())) > p.maxToken && len(paraTmp) > 0 {
 				p.paraSet = append(p.paraSet, paraTmp)
-				clear(paraTmp)
-				addText(&caluText, runs.Text(), true)
+				paraTmp = make(translate.Paragraph, 0)
+				addText(&caluText, text, true)
 			}
-			paraTmp = append(paraTmp, runs.Text())
+			paraTmp = append(paraTmp, text)
+		}
+
+		// 最后
+		if idx == len(paragraphs)-1 && len(paraTmp) > 0 {
+			p.paraSet = append(p.paraSet, paraTmp)
+			paraTmp = make(translate.Paragraph, 0)
+			caluText.Reset()
 		}
 	}
 
@@ -225,21 +235,28 @@ func (p *DocxProcessor) ProcessText() {
 	}
 
 	if p.logger != nil {
-		p.logger.Info("开始翻译 %d 个段落", len(p.paraSet))
+		p.logger.Info("开始翻译%d个分块", len(p.paraSet))
 	}
 
+	p.tranParaSet = make([]translate.Paragraph, len(p.paraSet))
 	pool, _ := ants.NewPool(p.maxGo,
 		ants.WithMaxBlockingTasks(1<<20),
 		ants.WithPreAlloc(true),
 		ants.WithExpiryDuration(1))
 
 	for k, paragraph := range p.paraSet {
-		p.wg.Add(1)
-
 		paraIdx := k
-		paraCopy := make(translate.Paragraph, len(paragraph))
-		copy(paraCopy, paragraph)
+		paraCopy := paragraph
+		para := strings.Join(paraCopy, ",")
+		if p.langChecker != nil && p.langChecker.Check(para) {
+			if p.logger != nil {
+				p.logger.Info("翻译跳过:%d [%s]", k, para)
+			}
+			p.tranParaSet[paraIdx] = p.paraSet[paraIdx]
+			continue
+		}
 
+		p.wg.Add(1)
 		_ = pool.Submit(func() {
 			defer p.wg.Done()
 
@@ -259,14 +276,11 @@ func (p *DocxProcessor) ProcessText() {
 			if p.logger != nil {
 				if err != nil {
 					p.logger.LogTranslationResponse(paraIdx, false, "", err)
+					return
 				} else {
 					translatedText := strings.Join(t, "|")
 					p.logger.LogTranslationResponse(paraIdx, true, translatedText, nil)
 				}
-			}
-
-			if err != nil {
-				return
 			}
 
 			p.rw.Lock()
@@ -277,10 +291,6 @@ func (p *DocxProcessor) ProcessText() {
 
 	p.wg.Wait()
 	pool.Release()
-
-	if p.logger != nil {
-		p.logger.Info("翻译完成，成功翻译 %d 个段落", len(p.tranParaSet))
-	}
 }
 
 // WriteChanges 将处理后的内容写回 DOCX 文件
@@ -347,7 +357,7 @@ func (p *DocxProcessor) Process() error {
 		}
 		return err
 	}
-	return nil
+
 	// 3. 处理文本
 	p.ProcessText()
 
