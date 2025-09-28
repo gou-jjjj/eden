@@ -186,6 +186,11 @@ func (p *DocxProcessor) ExtractText() error {
 
 		for _, r := range runs {
 			text := r.Text()
+			if strings.TrimSpace(text) == "" {
+				p.logger.Info("忽略空文本块")
+				continue
+			}
+
 			segmentCount++
 			totalCount += len([]rune(text))
 

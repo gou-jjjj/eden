@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -218,11 +219,7 @@ func (t *TranOpenai) translateWithRetry(req *TranReq) (Paragraph, error) {
 		result, err := t.performTranslation(req)
 		if err == nil {
 			if t.logger != nil {
-				if attempt > 0 {
-					t.logger.Info("翻译重试成功，第 %d 次尝试", attempt)
-				} else {
-					t.logger.Debug("翻译成功")
-				}
+				t.logger.Debug("翻译成功")
 			}
 			return result, nil
 		}
@@ -280,8 +277,10 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 	}
 
 	msgs := samplePrompt[getLangKey(lang.ZH, lang.EN)]
+	contentMsg := strings.Join(req.Paras, Seq)
 	content := append([]llms.MessageContent{llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To))}, msgs...)
-	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, strings.Join(req.Paras, Seq)))
+	content = append(content, commonPrompt...)
+	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, contentMsg))
 	generateContent, err := llm.GenerateContent(ctx, content)
 	if err != nil {
 		return nil, err
@@ -295,6 +294,11 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 
 	if len(req.Paras) != len(res) {
 		if t.logger != nil {
+			_ = os.WriteFile(fmt.Sprintf("error_resp_%d.log", time.Now().Unix()),
+				[]byte(strings.Join([]string{
+					contentMsg, generateContent.Choices[0].Content,
+				}, "___________________________________________________________________________")),
+				0644)
 			t.logger.Warn("翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失，req:%d, res:%d", len(req.Paras), len(res))
 		}
 		return res, fmt.Errorf("response error，req:%d!=res:%d", len(req.Paras), len(res))
@@ -324,4 +328,9 @@ var samplePrompt = map[string][]llms.MessageContent{
 		llms.TextParts(llms.ChatMessageTypeHuman, "To run the program, use: `python main.py --input data.json`\n---\nThis will process the dataset and generate\n---\noutput files in `/results/` directory by 5PM EST."),
 		llms.TextParts(llms.ChatMessageTypeAI, "要运行程序，请使用：`python main.py --input data.json`\n---\n这将处理数据集并生成\n---\n输出文件到`/results/`目录，截止东部时间下午5点。"),
 	},
+}
+
+var commonPrompt = []llms.MessageContent{
+	llms.TextParts(llms.ChatMessageTypeHuman, "\n\n---\n\n---\n\n"),
+	llms.TextParts(llms.ChatMessageTypeAI, "\n\n---\n\n---\n\n"),
 }
