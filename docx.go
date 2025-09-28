@@ -63,6 +63,12 @@ func WithLogger(logger *logger.DocxLogger) Opt {
 	}
 }
 
+func WithMaxToken(maxToken int) Opt {
+	return func(p *DocxProcessor) {
+		p.maxToken = maxToken
+	}
+}
+
 // DocxProcessor DOCX 处理器
 type DocxProcessor struct {
 	fromLang    string
@@ -70,8 +76,9 @@ type DocxProcessor struct {
 	f           *document.Document
 	closeFunc   func() error
 	fileName    string
-	paraSet     map[int]translate.Paragraph
-	tranParaSet map[int]translate.Paragraph
+	paraSet     []translate.Paragraph
+	tranParaSet []translate.Paragraph
+	maxToken    int
 
 	inputPath   string
 	outputDir   string
@@ -96,9 +103,12 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 	if p.maxGo <= 0 {
 		p.maxGo = 1
 	}
+	if p.maxToken <= 0 {
+		p.maxToken = 1 << 16 // 默认最大文字数 65536
+	}
 
-	p.paraSet = make(map[int]translate.Paragraph)
-	p.tranParaSet = make(map[int]translate.Paragraph)
+	p.paraSet = make([]translate.Paragraph, 0)
+	p.tranParaSet = make([]translate.Paragraph, 0)
 	p.langChecker = lang.LangMapChecks[p.toLang]
 	p.fileName = strings.Split(filepath.Base(p.inputPath), ".")[0]
 
@@ -151,45 +161,48 @@ func (p *DocxProcessor) LoadFile() error {
 
 // ExtractText 从 DOCX 文件中提取文本内容
 func (p *DocxProcessor) ExtractText() error {
+	totalCount := 0
 	paragraphCount := 0
+	segmentCount := 0
 	tableCount := len(p.f.Tables())
+	paraTmp := make(translate.Paragraph, 0, 1<<8)
+	caluText := strings.Builder{}
 
-	for idx, paragraph := range p.f.Paragraphs() {
+	addText := func(s *strings.Builder, str string, clearOld bool) {
+		if clearOld {
+			s.Reset()
+		}
+		s.WriteString(str)
+		s.WriteString(translate.Seq)
+	}
+
+	for _, paragraph := range p.f.Paragraphs() {
+		paragraphCount++
 		if len(paragraph.Runs()) == 0 {
 			continue
 		}
 
-		paraTmp := make(translate.Paragraph, 0, len(paragraph.Runs()))
-		needTran := false
-		hasText := false
-		var originalText strings.Builder
-
 		for _, runs := range paragraph.Runs() {
-			text := strings.TrimSpace(runs.Text())
-			if text != "" {
-				hasText = true
-				originalText.WriteString(text)
-				if p.langChecker != nil && !p.langChecker.Check(text) {
-					needTran = true
-				}
+			segmentCount++
+			totalCount += len([]rune(runs.Text()))
+
+			if p.logger != nil {
+				p.logger.LogParagraphProcessing(segmentCount, runs.Text(), true)
+			}
+			addText(&caluText, runs.Text(), false)
+
+			// 检查长度
+			if len([]rune(caluText.String())) > p.maxToken {
+				p.paraSet = append(p.paraSet, paraTmp)
+				clear(paraTmp)
+				addText(&caluText, runs.Text(), true)
 			}
 			paraTmp = append(paraTmp, runs.Text())
-		}
-
-		if hasText {
-			paragraphCount++
-			if p.logger != nil {
-				p.logger.LogParagraphProcessing(idx, originalText.String(), needTran)
-			}
-		}
-
-		if needTran && hasText {
-			p.paraSet[idx] = paraTmp
 		}
 	}
 
 	if p.logger != nil {
-		p.logger.LogTextExtraction(paragraphCount, tableCount)
+		p.logger.LogTextExtraction(paragraphCount, segmentCount, tableCount, totalCount)
 	}
 
 	return nil
@@ -334,7 +347,7 @@ func (p *DocxProcessor) Process() error {
 		}
 		return err
 	}
-
+	return nil
 	// 3. 处理文本
 	p.ProcessText()
 

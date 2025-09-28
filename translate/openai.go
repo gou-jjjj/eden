@@ -20,7 +20,7 @@ const (
 	GithubFree = "githubfree"
 	OpenRouter = "openrouter"
 
-	seq = "\n---\n"
+	Seq = "\n---\n"
 )
 
 // RetryConfig 重试配置
@@ -280,7 +280,7 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 
 	msgs := samplePrompt[getLangKey(lang.ZH, lang.EN)]
 	content := append([]llms.MessageContent{llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To))}, msgs...)
-	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, strings.Join(req.Paras, seq)))
+	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, strings.Join(req.Paras, Seq)))
 	generateContent, err := llm.GenerateContent(ctx, content)
 	if err != nil {
 		return nil, err
@@ -290,7 +290,7 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 		return nil, fmt.Errorf("no response choices returned from API")
 	}
 
-	res := strings.Split(generateContent.Choices[0].Content, seq)
+	res := strings.Split(generateContent.Choices[0].Content, Seq)
 	return res, nil
 }
 

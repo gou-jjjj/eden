@@ -161,18 +161,20 @@ func (l *DocxLogger) LogFileLoad(success bool, filePath string, err error) {
 }
 
 // LogTextExtraction 记录文本提取
-func (l *DocxLogger) LogTextExtraction(paragraphCount, tableCount int) {
+func (l *DocxLogger) LogTextExtraction(paragraphCount, segmentCount, tableCount, totalCount int) {
 	l.Info("文本提取完成")
+	l.Info("总文字数量: %d", totalCount)
 	l.Info("段落数量: %d", paragraphCount)
+	l.Info("文本块数量: %d", segmentCount)
 	l.Info("表格数量: %d", tableCount)
 }
 
 // LogParagraphProcessing 记录段落处理
 func (l *DocxLogger) LogParagraphProcessing(paragraphIndex int, originalText string, needTranslation bool) {
 	if needTranslation {
-		l.Debug("段落 %d [%s]", paragraphIndex, originalText)
+		l.Debug("文字块%d[%s]", paragraphIndex, originalText)
 	} else {
-		l.Debug("段落 %d 跳过翻译: %s", paragraphIndex, originalText)
+		l.Debug("文字块%d跳过翻译:[%s]", paragraphIndex, originalText)
 	}
 }
 
