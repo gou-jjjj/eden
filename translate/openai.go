@@ -294,11 +294,23 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 
 	if len(req.Paras) != len(res) {
 		if t.logger != nil {
-			_ = os.WriteFile(fmt.Sprintf("error_resp_%d.log", time.Now().Unix()),
-				[]byte(strings.Join([]string{
-					contentMsg, generateContent.Choices[0].Content,
-				}, "___________________________________________________________________________")),
-				0644)
+			// 记录错误内容到日志文件，便于排查
+			s := strings.Builder{}
+			for i := 0; i < max(len(req.Paras), len(res)); i++ {
+				if i < len(req.Paras) {
+					s.WriteString(fmt.Sprintf("[%s] ", req.Paras[i]))
+				} else {
+					s.WriteString(fmt.Sprintf("[] "))
+				}
+				if i < len(res) {
+					s.WriteString(fmt.Sprintf("[%s] ", res[i]))
+				} else {
+					s.WriteString("[] ")
+				}
+				s.WriteString(Seq)
+			}
+
+			_ = os.WriteFile(fmt.Sprintf("error_resp_%d.log", time.Now().Unix()), []byte(s.String()), 0644)
 			t.logger.Warn("翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失，req:%d, res:%d", len(req.Paras), len(res))
 		}
 		return res, fmt.Errorf("response error，req:%d!=res:%d", len(req.Paras), len(res))
