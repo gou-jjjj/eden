@@ -77,7 +77,7 @@ type DocxProcessor struct {
 	closeFunc   func() error
 	fileName    string
 	paraSet     []translate.Paragraph
-	tranParaSet []translate.Paragraph
+	tranParaSet map[string]string
 	maxToken    int
 
 	inputPath   string
@@ -108,7 +108,7 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 	}
 
 	p.paraSet = make([]translate.Paragraph, 0)
-	p.tranParaSet = make([]translate.Paragraph, 0)
+	p.tranParaSet = make(map[string]string, 0)
 	p.langChecker = lang.LangMapChecks[p.toLang]
 	p.fileName = strings.Split(filepath.Base(p.inputPath), ".")[0]
 
@@ -238,7 +238,6 @@ func (p *DocxProcessor) ProcessText() {
 		p.logger.Info("开始翻译%d个分块", len(p.paraSet))
 	}
 
-	p.tranParaSet = make([]translate.Paragraph, len(p.paraSet))
 	pool, _ := ants.NewPool(p.maxGo,
 		ants.WithMaxBlockingTasks(1<<20),
 		ants.WithPreAlloc(true),
@@ -247,12 +246,15 @@ func (p *DocxProcessor) ProcessText() {
 	for k, paragraph := range p.paraSet {
 		paraIdx := k
 		paraCopy := paragraph
-		para := strings.Join(paraCopy, ",")
-		if p.langChecker != nil && p.langChecker.Check(para) {
+		paraStr := strings.Join(paraCopy, "|")
+		if p.langChecker != nil && p.langChecker.Check(paraStr) {
 			if p.logger != nil {
-				p.logger.Info("翻译跳过:%d [%s]", k, para)
+				p.logger.Info("翻译跳过:%d [%s]", k, paraStr)
 			}
-			p.tranParaSet[paraIdx] = p.paraSet[paraIdx]
+
+			p.rw.Lock()
+			p.tranParaSet = combineMap(p.tranParaSet, fillMap(paraCopy))
+			p.rw.Unlock()
 			continue
 		}
 
@@ -284,7 +286,7 @@ func (p *DocxProcessor) ProcessText() {
 			}
 
 			p.rw.Lock()
-			p.tranParaSet[paraIdx] = t
+			p.tranParaSet = combineMap(p.tranParaSet, fillMap(paraCopy, t))
 			p.rw.Unlock()
 		})
 	}
@@ -299,19 +301,20 @@ func (p *DocxProcessor) WriteChanges() {
 		p.logger.Info("开始将翻译结果写回文档")
 	}
 
-	for idx, tranSet := range p.tranParaSet {
-		paragraph := p.f.Paragraphs()[idx]
-
-		for tranIdx, run := range paragraph.Runs() {
-			if tranIdx >= len(tranSet) {
-				break
-			}
-			run.ClearContent()
-			run.AddText(tranSet[tranIdx])
+	paragraphs := p.f.Paragraphs()
+	for _, paragraph := range paragraphs {
+		runs := paragraph.Runs()
+		if len(runs) == 0 {
+			continue
 		}
 
-		if p.logger != nil {
-			p.logger.Debug("已更新段落 %d 的翻译内容", idx)
+		for _, r := range runs {
+			k := r.Text()
+
+			if tranStr, ok := p.tranParaSet[k]; ok {
+				r.ClearContent()
+				r.AddText(tranStr)
+			}
 		}
 	}
 
@@ -372,15 +375,40 @@ func (p *DocxProcessor) Process() error {
 	if p.logger != nil {
 		p.logger.LogFileSave(err == nil, outPath, err)
 
-		// 记录统计信息
-		totalParagraphs := len(p.paraSet)
-		translatedParagraphs := len(p.tranParaSet)
-		skippedParagraphs := totalParagraphs - translatedParagraphs
-		p.logger.LogStatistics(totalParagraphs, translatedParagraphs, skippedParagraphs)
-
 		// 记录翻译结束
 		p.logger.LogTranslationEnd(outPath, err == nil, time.Since(startTime))
 	}
 
 	return err
+}
+
+func fillMap(src ...[]string) map[string]string {
+	m := map[string]string{}
+	if len(src) == 0 {
+		return m
+	}
+
+	key := src[0]
+	val := src[0]
+	if len(src) > 1 {
+		val = src[1]
+	}
+	if len(key) != len(val) {
+		return m
+	}
+
+	for i, k := range key {
+		m[k] = val[i]
+	}
+	return m
+}
+
+func combineMap(maps ...map[string]string) map[string]string {
+	m := map[string]string{}
+	for _, mm := range maps {
+		for k, v := range mm {
+			m[k] = v
+		}
+	}
+	return m
 }

@@ -38,7 +38,7 @@ func TestNewDocxProcessor(t *testing.T) {
 		WithProcessFunc(translate.NewOpenaiWithLogger(translate.OpenRouter, newLogger, zhipi)),
 		WithMaxGo(2),
 		WithLogger(newLogger),
-		WithMaxToken(500))
+		WithMaxToken(5000))
 
 	err = pr.Process()
 	if err != nil {

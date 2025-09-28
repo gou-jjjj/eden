@@ -170,6 +170,7 @@ func isRetryableError(err error) bool {
 		"gateway timeout",
 		"temporary",
 		"retry",
+		"response error",
 	}
 
 	for _, pattern := range retryablePatterns {
@@ -291,6 +292,14 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 	}
 
 	res := strings.Split(generateContent.Choices[0].Content, Seq)
+
+	if len(req.Paras) != len(res) {
+		if t.logger != nil {
+			t.logger.Warn("翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失，req:%d, res:%d", len(req.Paras), len(res))
+		}
+		return res, fmt.Errorf("response error，req:%d!=res:%d", len(req.Paras), len(res))
+	}
+
 	return res, nil
 }
 
