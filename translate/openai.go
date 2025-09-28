@@ -199,7 +199,7 @@ func (t *TranOpenai) translateWithRetry(req *TranReq) (Paragraph, error) {
 		if attempt > 0 {
 			delay := t.calculateDelay(attempt - 1)
 			if t.logger != nil {
-				t.logger.Debug("重试翻译，第 %d 次尝试，等待 %v", attempt, delay)
+				t.logger.Info("重试翻译，第 %d 次尝试，等待 %v", attempt, delay)
 			}
 			time.Sleep(delay)
 		}
@@ -209,7 +209,7 @@ func (t *TranOpenai) translateWithRetry(req *TranReq) (Paragraph, error) {
 			if attempt == 0 {
 				t.logger.Debug("开始翻译请求")
 			} else {
-				t.logger.Debug("重试翻译，第 %d 次尝试", attempt)
+				t.logger.Info("重试翻译，第 %d 次尝试", attempt)
 			}
 		}
 

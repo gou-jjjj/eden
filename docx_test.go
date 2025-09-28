@@ -32,10 +32,10 @@ func TestNewDocxProcessor(t *testing.T) {
 	zhipi := translate.NewOpenai(translate.ZhiPu)
 
 	pr := NewDocxProcessor(
-		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\zlobinski2011.docx"),
+		WithInput("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"),
 		WithOutput("./out"),
-		WithLang(lang.EN, lang.ZH),
-		WithProcessFunc(translate.NewOpenai(translate.OpenRouter, zhipi)),
+		WithLang(lang.ZH, lang.EN),
+		WithProcessFunc(translate.NewOpenaiWithLogger(translate.OpenRouter, newLogger, zhipi)),
 		WithMaxGo(2),
 		WithLogger(newLogger))
 
