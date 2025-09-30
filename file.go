@@ -1,4 +1,4 @@
-package main
+package eden
 
 // DocxProcessor 定义 DOCX 文件处理接口
 type Processor interface {

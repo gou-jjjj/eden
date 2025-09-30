@@ -1,4 +1,4 @@
-package main
+package eden
 
 import (
 	"fmt"
@@ -32,13 +32,12 @@ func TestNewDocxProcessor(t *testing.T) {
 	zhipi := translate.NewOpenai(translate.ZhiPu)
 
 	pr := NewDocxProcessor(
-		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"),
+		WithInput("/Users/calvin/go/src/eden/file_examples/Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
 		WithLang(lang.EN, lang.ZH),
-		WithProcessFunc(translate.NewOpenaiWithLogger(translate.OpenRouter, newLogger, zhipi)),
+		WithProcessFunc(translate.NewOpenai(translate.OpenRouter, zhipi)),
 		WithMaxGo(3),
-		WithLogger(newLogger),
-		WithMaxToken(1000))
+		WithLogger(newLogger))
 
 	err = pr.Process()
 	if err != nil {
@@ -57,7 +56,7 @@ func TestNewDocxProcessor(t *testing.T) {
 }
 
 func TestContent(t *testing.T) {
-	const path = "C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"
+	const path = "/Users/calvin/go/src/eden/file_examples/Docx4j_GettingStarted.docx"
 	doc, err := document.Open(path)
 	if err != nil {
 		t.Fatal(err)
