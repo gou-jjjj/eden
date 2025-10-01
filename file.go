@@ -8,4 +8,5 @@ type Processor interface {
 
 const (
 	Docx = "docx"
+	Pdf  = "pdf"
 )

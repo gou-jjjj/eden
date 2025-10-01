@@ -20,6 +20,7 @@ const (
 	ZhiPu      = "zhipu"
 	GithubFree = "githubfree"
 	OpenRouter = "openrouter"
+	AliBaBa    = "alibaba"
 
 	Seq = "\n---\n"
 )
@@ -48,6 +49,7 @@ var OpenaiModelList = map[string]struct {
 	ZhiPu:      {"https://open.bigmodel.cn/api/paas/v4", "23c650b6b73d4b1b80500699edcbf87c.qU9lcBTeGfku2gKz", "glm-4-plus"},
 	GithubFree: {"https://api.chatanywhere.tech", "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5", "deepseek-v3"},
 	OpenRouter: {"https://openrouter.ai/api/v1", "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", "x-ai/grok-4-fast:free"},
+	AliBaBa:    {"https://dashscope.aliyuncs.com/compatible-mode/v1", "sk-227cf58d893d4a689e82d2b8eb8f3564", "dqwen-plus"},
 }
 
 type TranOpenai struct {
