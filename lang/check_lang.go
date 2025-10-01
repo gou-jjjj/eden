@@ -7,7 +7,7 @@ import (
 
 // 语言代码常量
 const (
-	All = "Other languages" // 所有语言
+	All = "other languages" // 所有语言
 
 	ZH = "Chinese"  // 中文
 	EN = "English"  // 英文

@@ -9,9 +9,21 @@ import (
 //go:embed translate_prompt.md
 var translatePrompt string
 
-func TranslatePrompt(fromLang, toLang string) string {
+//go:embed translate_single_prompt.md
+var translateSinglePrompt string
+
+func TranslatePrompt(fromLang, toLang string, segLen ...int) string {
 	// 解析模板
-	tmpl, err := template.New("translatePrompt").Parse(translatePrompt)
+	prompt := translatePrompt
+	if len(segLen) >= 1 {
+		switch segLen[0] {
+		case 1:
+			prompt = translateSinglePrompt
+		default:
+		}
+	}
+
+	tmpl, err := template.New("translatePrompt").Parse(prompt)
 	if err != nil {
 		panic(err)
 	}

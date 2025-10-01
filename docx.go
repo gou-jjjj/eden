@@ -32,7 +32,16 @@ func WithOutput(dir string) Opt {
 	}
 }
 
-func WithLang(from, to string) Opt {
+func WithLang(lg ...string) Opt {
+	to := lang.EN
+	if len(lg) == 1 {
+		to = lg[0]
+	}
+	from := lang.All
+	if len(lg) == 2 {
+		from = lg[0]
+		to = lg[1]
+	}
 	return func(p *DocxProcessor) {
 		p.fromLang = from
 		p.toLang = to
@@ -186,8 +195,10 @@ func (p *DocxProcessor) ExtractText() error {
 
 		for _, r := range runs {
 			text := r.Text()
-			if strings.TrimSpace(text) == "" {
-				p.logger.Info("忽略空文本块")
+
+			// 语言检查
+			if trimText := strings.TrimSpace(text); strings.TrimSpace(trimText) == "" || (p.langChecker != nil && p.langChecker.Check(trimText)) {
+				p.logger.Info(fmt.Sprintf("忽略文本块[%v]", text))
 				continue
 			}
 

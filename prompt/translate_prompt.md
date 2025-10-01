@@ -48,7 +48,7 @@ translated segmentN
 ## Core Rules
 
 1. **Context Awareness**: Understand the complete sentence before translating segments
-2. **Structure Preservation**: Output must have exactly the same number of segments as input
+2. **Structure Preservation**: Output must have exactly the same number of segments as input. Each input segment must map to one output segment—no merging, splitting allowed.
 3. **Coherence**: Translated segments should form a fluent sentence when combined
 4. **Completeness**:To translate all content, superfluous formatting such as punctuation, whitespace, and line breaks must be preserved and not removed
 5. **Special Content**: Leave code, formulas, etc. unchanged

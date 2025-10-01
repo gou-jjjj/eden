@@ -22,22 +22,23 @@ func debugDelete() {
 }
 
 func TestNewDocxProcessor(t *testing.T) {
-	debugDelete()
+	//debugDelete()
 	newLogger, err := logger.NewLogger(true, "./out", "test_docx_processor")
 	if err != nil {
 		t.Log(err)
 		return
 	}
 	newLogger.SetLevel(logger.DEBUG)
-	zhipi := translate.NewOpenai(translate.ZhiPu)
+	open := translate.NewOpenai(translate.OpenRouter)
 
 	pr := NewDocxProcessor(
 		WithInput("/Users/calvin/go/src/eden/file_examples/Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
-		WithLang(lang.EN, lang.ZH),
-		WithProcessFunc(translate.NewOpenai(translate.OpenRouter, zhipi)),
-		WithMaxGo(3),
-		WithLogger(newLogger))
+		WithLang(lang.ZH),
+		WithProcessFunc(translate.NewOpenaiWithLogger(translate.AliBaBa, newLogger, open)),
+		WithMaxGo(10),
+		WithLogger(newLogger),
+		WithMaxToken(100))
 
 	err = pr.Process()
 	if err != nil {

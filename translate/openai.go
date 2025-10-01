@@ -49,7 +49,7 @@ var OpenaiModelList = map[string]struct {
 	ZhiPu:      {"https://open.bigmodel.cn/api/paas/v4", "23c650b6b73d4b1b80500699edcbf87c.qU9lcBTeGfku2gKz", "glm-4-plus"},
 	GithubFree: {"https://api.chatanywhere.tech", "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5", "deepseek-v3"},
 	OpenRouter: {"https://openrouter.ai/api/v1", "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", "x-ai/grok-4-fast:free"},
-	AliBaBa:    {"https://dashscope.aliyuncs.com/compatible-mode/v1", "sk-227cf58d893d4a689e82d2b8eb8f3564", "dqwen-plus"},
+	AliBaBa:    {"https://dashscope.aliyuncs.com/compatible-mode/v1", "sk-227cf58d893d4a689e82d2b8eb8f3564", "qwen-plus"},
 }
 
 type TranOpenai struct {
@@ -280,8 +280,7 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 
 	msgs := samplePrompt[getLangKey(lang.ZH, lang.EN)]
 	contentMsg := strings.Join(req.Paras, Seq)
-	content := append([]llms.MessageContent{llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To))}, msgs...)
-	content = append(content, commonPrompt...)
+	content := append([]llms.MessageContent{llms.TextParts(llms.ChatMessageTypeSystem, prompt.TranslatePrompt(req.From, req.To, len(req.Paras)))}, msgs...)
 	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, contentMsg))
 	generateContent, err := llm.GenerateContent(ctx, content)
 	if err != nil {
@@ -342,9 +341,4 @@ var samplePrompt = map[string][]llms.MessageContent{
 		llms.TextParts(llms.ChatMessageTypeHuman, "To run the program, use: `python main.py --input data.json`\n---\nThis will process the dataset and generate\n---\noutput files in `/results/` directory by 5PM EST."),
 		llms.TextParts(llms.ChatMessageTypeAI, "要运行程序，请使用：`python main.py --input data.json`\n---\n这将处理数据集并生成\n---\n输出文件到`/results/`目录，截止东部时间下午5点。"),
 	},
-}
-
-var commonPrompt = []llms.MessageContent{
-	llms.TextParts(llms.ChatMessageTypeHuman, "\n\n---\n\n---\n\n"),
-	llms.TextParts(llms.ChatMessageTypeAI, "\n\n---\n\n---\n\n"),
 }
