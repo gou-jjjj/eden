@@ -149,22 +149,3 @@ var LangMapChecks = map[string]LanguageChecker{
 	AR: ArabicChecker{},
 	EL: GreekChecker{},
 }
-
-// 辅助函数：检测文本语言
-func DetectLanguage(text string) (string, string) {
-	for code, checker := range LangMapChecks {
-		if checker.Check(text) {
-			return code, checker.Name()
-		}
-	}
-	return "", "Unknown"
-}
-
-// 辅助函数：检查文本是否为特定语言
-func IsLanguage(text, langCode string) bool {
-	checker, exists := LangMapChecks[langCode]
-	if !exists {
-		return false
-	}
-	return checker.Check(text)
-}
