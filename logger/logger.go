@@ -43,8 +43,7 @@ func NewLogger(needStdio bool, outputDir, fileName string) (*DocxLogger, error) 
 	}
 
 	// 生成日志文件名：原文件名_翻译时间戳_log.txt
-	timestamp := time.Now().Format("20060102_150405")
-	logFileName := fmt.Sprintf("%s_%s_log.txt", fileName, timestamp)
+	logFileName := fmt.Sprintf("%s_log.txt", fileName)
 	filePath := filepath.Join(outputDir, logFileName)
 
 	// 创建日志文件
