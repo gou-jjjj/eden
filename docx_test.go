@@ -29,14 +29,14 @@ func TestNewDocxProcessor(t *testing.T) {
 		return
 	}
 	newLogger.SetLevel(logger.INFO)
-	//open := translate.NewOpenai(translate.OpenRouter)
+	open := translate.NewOpenai(translate.OpenRouter)
 
 	pr := NewDocxProcessor(
-		WithInput("/Users/calvin/go/src/eden/file_examples/Docx4j_GettingStarted.docx"),
+		WithInput("/Users/calvin/go/src/eden/file_examples/Go20240617.docx"),
 		WithOutput("./out"),
-		WithLang(lang.ZH),
-		//WithProcessFunc(translate.NewOpenaiWithLogger(translate.AliBaBa, newLogger, open)),
-		WithProcessFunc(translate.NewMockTran()),
+		WithLang(lang.EN),
+		WithProcessFunc(translate.NewOpenaiWithLogger(translate.AliBaBa, newLogger, open)),
+		//WithProcessFunc(translate.NewMockTran()),
 		WithMaxGo(10),
 		WithLogger(newLogger),
 		WithMaxToken(100))
