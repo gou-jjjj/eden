@@ -153,9 +153,9 @@ func (t *AiTran) splitFlow(req *TranReq) (string, error) {
 			S: make([]string, 0),
 		},
 	})
-	fmt.Println(string(data))
+
 	content := fmt.Sprintf(prompt, data)
-	call, err := t.call(content)
+	call, err := t.call(content, llms.WithJSONMode())
 	if err != nil {
 		return "", err
 	}
