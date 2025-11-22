@@ -9,9 +9,7 @@ import (
 
 	"github.com/gou-jjjj/eden/lang"
 	"github.com/gou-jjjj/eden/logger"
-	"github.com/gou-jjjj/eden/prompt"
 	"github.com/tmc/langchaingo/llms"
-	"github.com/tmc/langchaingo/llms/openai"
 )
 
 const (
@@ -37,13 +35,16 @@ var OpenaiModelList = map[string]struct {
 }
 
 type AiTran struct {
+	ctx    context.Context
 	retry  int
-	models []*llms.Model
+	mIdx   int
+	models []llms.Model
 	elog   logger.Logger
 }
 
-func NewOpenai(elog logger.Logger, retry int, models ...llms.Model) *AiTran {
+func NewOpenai(ctx context.Context, elog logger.Logger, retry int, models ...llms.Model) *AiTran {
 	t := &AiTran{
+		ctx:   ctx,
 		retry: retry,
 		elog:  elog,
 	}
@@ -52,46 +53,44 @@ func NewOpenai(elog logger.Logger, retry int, models ...llms.Model) *AiTran {
 		t.elog = logger.DefaultLogger
 	}
 
+	if t.ctx == nil {
+		t.ctx = context.Background()
+	}
+
+	// 修复：正确初始化 models 切片
+	t.models = make([]llms.Model, 0)
 	for _, m := range models {
 		if m != nil {
-			models = append(models, m)
+			t.models = append(t.models, m)
 		}
 	}
 
 	return t
 }
 
+func (t *AiTran) call(content string, option ...llms.CallOption) (string, error) {
+	llm := t.model()
+	if llm == nil {
+		return "", fmt.Errorf("no available models")
+	}
+
+TRAN:
+	llmResp, err := llm.Call(t.ctx, content, option...)
+	if err != nil {
+		t.elog.Warn("模型请求失败：%v", err)
+		llm = t.nextModel()
+		if llm != nil {
+			goto TRAN
+		}
+		return "", err
+	}
+
+	return llmResp, nil
+}
+
 // 仅执行一次翻译，不再包含任何重试
 func (t *AiTran) performTranslation(req *TranReq) (Paragraph, error) {
-	ctx := context.Background()
-
-	msgs := samplePrompt[getLangKey(lang.ZH, lang.EN)]
-	contentMsg := strings.Join(req.Paras, Seq)
-	content := append([]llms.MessageContent{
-		llms.TextParts(
-			llms.ChatMessageTypeSystem,
-			prompt.TranslatePrompt(req.From, req.To, len(req.Paras)),
-		)},
-		msgs...,
-	)
-	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, contentMsg))
-	generateContent, err := llm.GenerateContent(ctx, content)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(generateContent.Choices) == 0 {
-		return nil, fmt.Errorf("no response choices returned from API")
-	}
-
-	res := strings.Split(generateContent.Choices[0].Content, Seq)
-
-	if len(req.Paras) != len(res) {
-		t.addLog(req, res)
-
-	}
-
-	return res, nil
+	return nil, nil
 }
 
 func (t *AiTran) addLog(req *TranReq, res []string) {
@@ -125,29 +124,32 @@ func (t *AiTran) addLog(req *TranReq, res []string) {
 
 // 不再带重试，只执行一次，失败后自动使用备用翻译器
 func (t *AiTran) T(req *TranReq) (Paragraph, error) {
-	result, err := t.performTranslation(req)
-	if err == nil {
-		return result, nil
-	}
 
-	t.elog.Warn("主翻译器失败: %v", err)
-
-	// 使用备用翻译器
-
-	if t.elog != nil {
-		t.elog.Info("尝试备用翻译器")
-	}
-	return t.back.T(req)
-
-	return nil, err
+	return nil, nil
 }
 
 func (t *AiTran) Name() string {
 	return "OpenAI"
 }
 
-func getLangKey(form, to string) string {
-	return fmt.Sprintf("%s_%s", form, to)
+func (t *AiTran) model() llms.Model {
+	if t.hasModels() {
+		return t.models[t.mIdx]
+	}
+	return nil
+}
+
+func (t *AiTran) hasModels() bool {
+	return t.mIdx < len(t.models)
+}
+
+func (t *AiTran) nextModel() llms.Model {
+	t.mIdx++
+	return t.model()
+}
+
+func getLangKey(from, to string) string {
+	return fmt.Sprintf("%s_%s", from, to)
 }
 
 var samplePrompt = map[string][]llms.MessageContent{
@@ -160,3 +162,9 @@ var samplePrompt = map[string][]llms.MessageContent{
 		llms.TextParts(llms.ChatMessageTypeAI, "要运行程序，请使用：`python main.py --input data.json`\n---\n这将处理数据集并生成\n---\n输出文件到`/results/`目录，截止东部时间下午5点。"),
 	},
 }
+
+const (
+	translatePrompt = `
+你是一个机器翻译专家，精通多种语言之间的翻译。请将以下内容从 %s 翻译成 %s 。请确保翻译准确且符合目标语言的语法和文化习惯。
+`
+)

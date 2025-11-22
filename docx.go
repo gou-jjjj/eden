@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gou-jjjj/eden/lang"
 	"github.com/gou-jjjj/eden/logger"
@@ -82,26 +81,19 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 func (p *DocxProcessor) LoadFile() error {
 	if p.inputPath == "" {
 		err := fmt.Errorf("input path is required")
-		if p.elog != nil {
-			p.elog.LogFileLoad(false, "", err)
-		}
+		p.elog.Close()
 		return err
 	}
 
 	f, err := document.Open(p.inputPath)
 	if err != nil {
-		if p.elog != nil {
-			p.elog.LogFileLoad(false, p.inputPath, err)
-		}
+		p.elog.Close()
 		return err
 	}
 
 	p.f = f
 	p.closeFunc = f.Close
 
-	if p.elog != nil {
-		p.elog.LogFileLoad(true, p.inputPath, nil)
-	}
 	return nil
 }
 
@@ -199,8 +191,8 @@ func (p *DocxProcessor) ProcessText() {
 
 			// 记录翻译请求
 			if p.elog != nil {
-				text := strings.Join(paraCopy, " ")
-				p.elog.LogTranslationRequest(paraIdx, p.fromLang, p.toLang, text)
+				//text := strings.Join(paraCopy, " ")
+				//p.elog.LogTranslationRequest(paraIdx, p.fromLang, p.toLang, text)
 			}
 
 			t, err := p.process.T(&translate.TranReq{
@@ -253,10 +245,8 @@ func (p *DocxProcessor) WriteChanges() {
 
 // Process 执行完整的 DOCX 处理流程
 func (p *DocxProcessor) Process() error {
-	startTime := time.Now()
 
 	// 记录翻译开始
-	p.elog.LogTranslationStart(p.inputPath, p.fromLang, p.toLang)
 	p.elog.Info("翻译器:%+v,文件名字:%+v", p.process.Name(), p.fileName)
 
 	defer func() {
@@ -270,13 +260,11 @@ func (p *DocxProcessor) Process() error {
 
 	// 1. 加载文件
 	if err := p.LoadFile(); err != nil {
-		p.elog.LogTranslationEnd("", false, time.Since(startTime))
 		return err
 	}
 
 	// 2. 提取文本
 	if err := p.ExtractText(); err != nil {
-		p.elog.LogTranslationEnd("", false, time.Since(startTime))
 		return err
 	}
 
