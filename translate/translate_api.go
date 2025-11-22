@@ -7,7 +7,8 @@ type TranReq struct {
 	To    string    `json:"to"`
 	Paras Paragraph `json:"paras"`
 
-	TranslatedText string `json:"-"`
+	TParas         Paragraph `json:"-"`
+	TranslatedText string    `json:"-"`
 }
 
 type Translate interface {

@@ -34,9 +34,10 @@ var OpenaiModelList = map[string]struct {
 }
 
 type AiTran struct {
+	retry int
+	mIdx  int
+
 	ctx    context.Context
-	retry  int
-	mIdx   int
 	models []llms.Model
 	elog   *slog.Logger
 }
@@ -191,18 +192,18 @@ func (t *AiTran) addLog(req *TranReq, res []string) {
 	)
 }
 
-func (t *AiTran) T(req *TranReq) (string, error) {
+func (t *AiTran) T(req *TranReq) ([]string, error) {
 	err := t.translationFlow(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, err = t.splitFlow(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return "", nil
+	return nil, nil
 }
 
 func (t *AiTran) model() llms.Model {

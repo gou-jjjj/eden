@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/tmc/langchaingo/llms/ollama"
+	"github.com/tmc/langchaingo/llms/openai"
 )
 
 func TestTest(t *testing.T) {
@@ -26,11 +27,11 @@ func TestTest(t *testing.T) {
 }
 
 func TestNewAiTran(t *testing.T) {
-	llm, err := ollama.New(
-		ollama.WithModel("qwen3:30b"))
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	llm, err := openai.New(
+		openai.WithModel("qwen-plus"),
+		openai.WithBaseURL("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+		openai.WithToken("sk-227cf58d893d4a689e82d2b8eb8f3564"),
+	)
 	o := NewAiTran(context.Background(), nil, 3, llm)
 	s, err := o.T(&TranReq{
 		From: "英语",
