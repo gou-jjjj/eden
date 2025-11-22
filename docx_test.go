@@ -37,7 +37,6 @@ func TestNewDocxProcessor(t *testing.T) {
 		WithLang(lang.ZH),
 		WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
 		//WithProcessFunc(translate.NewMockTran()),
-		WithMaxGo(10),
 		WithLogger(newLogger),
 		WithMaxToken(100))
 
@@ -100,7 +99,6 @@ func TestLogging(t *testing.T) {
 		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"),
 		WithOutput("./out"),
 		WithProcessFunc(translate.NewMockTran()),
-		WithMaxGo(1),
 		WithLogger(loggerInstance))
 
 	err = pr.Process()

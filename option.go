@@ -50,12 +50,6 @@ func WithLangChecker(checker lang.LanguageChecker) Opt {
 	}
 }
 
-func WithMaxGo(maxGo int) Opt {
-	return func(p *DocxProcessor) {
-		p.maxGo = maxGo
-	}
-}
-
 func WithLogger(logger *logger.DocxLogger) Opt {
 	return func(p *DocxProcessor) {
 		p.elog = logger

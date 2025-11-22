@@ -33,7 +33,6 @@ type DocxProcessor struct {
 
 	inputPath   string
 	outputDir   string
-	maxGo       int
 	process     translate.Translate
 	langChecker lang.LanguageChecker
 	elog        *logger.DocxLogger
@@ -51,9 +50,6 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 		}
 	}
 
-	if p.maxGo <= 0 {
-		p.maxGo = 1
-	}
 	if p.maxToken <= 0 {
 		p.maxToken = 1 << 20
 	}
@@ -262,8 +258,8 @@ func (p *DocxProcessor) Process() error {
 	// 记录翻译开始
 	if p.elog != nil {
 		p.elog.LogTranslationStart(p.inputPath, p.fromLang, p.toLang)
-		p.elog.Info("翻译器:%+v,文件名字:%+v,翻译最大并发数量:%+v",
-			p.process.Name(), p.fileName, p.maxGo)
+		p.elog.Info("翻译器:%+v,文件名字:%+v",
+			p.process.Name(), p.fileName)
 	}
 
 	defer func() {
