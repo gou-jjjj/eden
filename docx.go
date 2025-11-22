@@ -15,6 +15,11 @@ import (
 	"github.com/panjf2000/ants"
 )
 
+var pool, _ = ants.NewPool(1<<10,
+	ants.WithMaxBlockingTasks(1<<20),
+	ants.WithPreAlloc(true),
+	ants.WithExpiryDuration(1))
+
 // DocxProcessor DOCX 处理器
 type DocxProcessor struct {
 	fromLang    string
@@ -171,11 +176,6 @@ func (p *DocxProcessor) ProcessText() {
 		p.elog.Info("开始翻译%d个分块", len(p.paraSet))
 	}
 
-	pool, _ := ants.NewPool(p.maxGo,
-		ants.WithMaxBlockingTasks(1<<20),
-		ants.WithPreAlloc(true),
-		ants.WithExpiryDuration(1))
-
 	plen := len(p.paraSet)
 	for i := 0; i < plen; i++ {
 		paraIdx := i
@@ -214,16 +214,10 @@ func (p *DocxProcessor) ProcessText() {
 			})
 
 			// 记录翻译响应
-			if p.elog != nil {
-				if err != nil {
-					p.elog.LogTranslationResponse(paraIdx, false, "", err)
-					return
-				} else {
-					translatedText := strings.Join(t, "|")
-					p.elog.LogTranslationResponse(paraIdx, true, translatedText, nil)
-				}
+			if err != nil {
+				p.elog.Error("翻译段落[%d]失败: %v", paraIdx, err)
+				return
 			}
-
 			p.rw.Lock()
 			p.tranParaSet = combineMap(p.tranParaSet, fillMap(p.paraSet[i], t[startIdx:endIdx]))
 			p.rw.Unlock()
@@ -231,7 +225,6 @@ func (p *DocxProcessor) ProcessText() {
 	}
 
 	p.wg.Wait()
-	pool.Release()
 }
 
 // WriteChanges 将处理后的内容写回 DOCX 文件
@@ -300,9 +293,9 @@ func (p *DocxProcessor) Process() error {
 		return err
 	}
 
-	// 3. 处理文本
-	//p.ProcessText()
-	//
+	//3. 处理文本
+	p.ProcessText()
+
 	//// 4. 写回修改
 	//p.WriteChanges()
 
