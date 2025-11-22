@@ -2,13 +2,12 @@ package translate
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/tmc/langchaingo/llms/ollama"
 )
 
-func TestName(t *testing.T) {
+func TestTest(t *testing.T) {
 	llm, err := ollama.New(
 		ollama.WithModel("qwen3:8b"),
 	)
@@ -23,7 +22,7 @@ func TestName(t *testing.T) {
 		return
 	}
 
-	fmt.Printf("%v\n", call)
+	t.Log(call)
 }
 
 func TestNewAiTran(t *testing.T) {
