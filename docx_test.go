@@ -59,17 +59,3 @@ func TestPrompt(t *testing.T) {
 	translatePrompt := prompt.TranslatePrompt("english", "chinese")
 	t.Logf("%v\n", translatePrompt)
 }
-
-func TestLogging(t *testing.T) {
-	debugDelete()
-
-	pr := NewDocxProcessor(WithLang(lang.All, lang.EN),
-		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"),
-		WithOutput("./out"),
-		WithProcessFunc(translate.NewMockTran()))
-
-	err := pr.Process()
-	if err != nil {
-		t.Error(err)
-	}
-}

@@ -1,58 +1,21 @@
-# Translation Instructions
+请将以下JSON数据中`output.segment`字段的内容翻译成中文，并严格保持原有的JSON结构不变。
 
-**Role**: Professional Translation Expert  
-**Task**: Translate from {{.fromLang}} to {{.toLang}}
+**要求：**
 
-## Important Note
+1. 只翻译`output.segment`数组中的文本
+2. 保持`input`部分完全不变
+3. 保持`output.text`字段不变
+4. 保持数组结构和顺序不变
 
-The input is a complete sentence split into n segments. When translating:
+**输入格式示例：**
 
-- Use the full sentence context for accurate meaning
-- Maintain the original segment structure
-- Ensure the combined translation forms a natural {{.toLang}} sentence
+{"input": {"text": "hello world!", "segment": ["hello ", "world!"]}, "output": {"text": "你好 世界！", "segment": []}}
 
-## Input Format
 
-A single sentence divided into `n` segments:
+你给我的数据应该是：
 
-```text
-segment1
-------------
-segment2
-------------
-segment3
-------------
-segment4
-------------
-...
-------------
-segmentN
-```
+{"input": {"text": "hello world!", "segment": ["hello ", "world!"]}, "output": {"text": "你好 世界！", "segment": ["你好 ", "世界！"]}}
 
-## Output Requirements
+数据如下:
 
-```text
-translated segment1
-------------
-translated segment2
-------------
-translated segment3
-------------
-translated segment4
-------------
-...
-------------
-translated segmentN
-```
-
-## Core Rules
-
-1. **Context Awareness**: Understand the complete sentence before translating segments
-2. **Structure Preservation**: Output must have exactly the same number of segments as input. Each input segment must map to one output segment—no merging, splitting allowed.
-3. **Coherence**: Translated segments should form a fluent sentence when combined
-4. **Completeness**:To translate all content, superfluous formatting such as punctuation, whitespace, and line breaks must be preserved and not removed
-5. **Special Content**: Leave code, formulas, etc. unchanged
-
-## Response Format
-
-Return only the translated segments in the specified format. No additional explanations.
+%s
