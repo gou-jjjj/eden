@@ -113,16 +113,21 @@ func (p *DocxProcessor) ExtractText() error {
 		p.paraSet = append(p.paraSet, paraTmp)
 		segmentCount += len(paraTmp)
 		totalCharCnt += charCnt
-		p.elog.Info("处理段落[%d], 字符个数:[%d], 文字块个数:[%d],",
-			idx, charCnt, len(paraTmp))
-		p.elog.Debug("处理段落[%d],文字内容[%s]", idx, caluText.String())
+
+		p.elog.Info("处理段落",
+			slog.Int("paragraph_index", idx),
+			slog.Int("character_count", charCnt),
+			slog.Int("text_block_count", len(paraTmp)))
+		p.elog.Debug("处理段落内容",
+			slog.Int("paragraph_index", idx),
+			slog.String("text_content", caluText.String()))
 	}
 
-	p.elog.Info("文本提取完成")
-	p.elog.Info("总文字数量: %d", totalCharCnt)
-	p.elog.Info("文本块数量: %d", segmentCount)
-	p.elog.Info("段落数量: %d", len(paragraphs))
-	p.elog.Info("表格数量: %d", tableCount)
+	p.elog.Info("文本提取完成",
+		slog.Int("total_characters", totalCharCnt),
+		slog.Int("text_blocks", segmentCount),
+		slog.Int("paragraphs", len(paragraphs)),
+		slog.Int("tables", tableCount))
 
 	return nil
 }
@@ -142,7 +147,7 @@ func (p *DocxProcessor) ProcessText() {
 		if p.elog != nil {
 			p.elog.Warn("没有设置翻译处理器，跳过翻译")
 		}
-		return // 如果没有处理函数，返回原文本
+		return
 	}
 
 	if len(p.paraSet) == 0 {
@@ -153,7 +158,8 @@ func (p *DocxProcessor) ProcessText() {
 	}
 
 	if p.elog != nil {
-		p.elog.Info("开始翻译%d个分块", len(p.paraSet))
+		p.elog.Info("开始翻译段落",
+			slog.Int("paragraph_count", len(p.paraSet)))
 	}
 
 	plen := len(p.paraSet)
@@ -181,12 +187,6 @@ func (p *DocxProcessor) ProcessText() {
 		_ = pool.Submit(func() {
 			defer p.wg.Done()
 
-			// 记录翻译请求
-			if p.elog != nil {
-				//text := strings.Join(paraCopy, " ")
-				//p.elog.LogTranslationRequest(paraIdx, p.fromLang, p.toLang, text)
-			}
-
 			t, err := p.process.T(&translate.TranReq{
 				From:  p.fromLang,
 				To:    p.toLang,
@@ -195,7 +195,9 @@ func (p *DocxProcessor) ProcessText() {
 
 			// 记录翻译响应
 			if err != nil {
-				p.elog.Error("翻译段落[%d]失败: %v", paraIdx, err)
+				p.elog.Error("翻译段落失败",
+					slog.Int("paragraph_index", paraIdx),
+					slog.String("error", err.Error()))
 				return
 			}
 			p.rw.Lock()
@@ -237,10 +239,14 @@ func (p *DocxProcessor) WriteChanges() {
 
 // Process 执行完整的 DOCX 处理流程
 func (p *DocxProcessor) Process() error {
-	// 记录翻译开始
-	p.elog.Info("翻译器:%+v,文件名字:%+v", p.process.Name(), p.fileName)
-	if p.closeFunc == nil {
-		defer p.closeFunc()
+	// 修复：使用正确的键值对格式
+	p.elog.Info("开始翻译文档",
+		slog.String("translator", p.process.Name()),
+		slog.String("file_name", p.fileName))
+
+	// 修复：正确的defer逻辑
+	if p.closeFunc != nil {
+		defer func() { _ = p.closeFunc() }()
 	}
 	// 1. 加载文件
 	if err := p.LoadFile(); err != nil {
@@ -264,38 +270,9 @@ func (p *DocxProcessor) Process() error {
 	if err != nil {
 		return err
 	}
-	p.elog.Info("文件处理完成，输出路径: %s", outPath)
+
+	p.elog.Info("文件处理完成",
+		slog.String("output_path", outPath))
 
 	return nil
-}
-
-func fillMap(src ...[]string) map[string]string {
-	m := map[string]string{}
-	if len(src) == 0 {
-		return m
-	}
-
-	key := src[0]
-	val := src[0]
-	if len(src) > 1 {
-		val = src[1]
-	}
-	if len(key) != len(val) {
-		return m
-	}
-
-	for i, k := range key {
-		m[k] = val[i]
-	}
-	return m
-}
-
-func combineMap(maps ...map[string]string) map[string]string {
-	m := map[string]string{}
-	for _, mm := range maps {
-		for k, v := range mm {
-			m[k] = v
-		}
-	}
-	return m
 }
