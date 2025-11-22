@@ -26,7 +26,7 @@ func TestName(t *testing.T) {
 	fmt.Printf("%v\n", call)
 }
 
-func TestNewOpenai(t *testing.T) {
+func TestNewAiTran(t *testing.T) {
 	llm, err := ollama.New(
 		ollama.WithModel("qwen3:30b"))
 	if err != nil {

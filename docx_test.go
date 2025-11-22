@@ -20,7 +20,6 @@ func debugDelete() {
 }
 
 func TestNewDocxProcessor(t *testing.T) {
-
 	pr := NewDocxProcessor(
 		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
@@ -33,7 +32,6 @@ func TestNewDocxProcessor(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 }
 
 func TestContent(t *testing.T) {
