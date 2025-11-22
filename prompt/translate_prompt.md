@@ -17,15 +17,15 @@ A single sentence divided into `n` segments:
 
 ```text
 segment1
----
+------------
 segment2
----
+------------
 segment3
----
+------------
 segment4
----
+------------
 ...
----
+------------
 segmentN
 ```
 
@@ -33,15 +33,15 @@ segmentN
 
 ```text
 translated segment1
----
+------------
 translated segment2
----
+------------
 translated segment3
----
+------------
 translated segment4
----
+------------
 ...
----
+------------
 translated segmentN
 ```
 

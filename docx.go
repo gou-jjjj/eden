@@ -120,7 +120,7 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 	p.tranParaSet = make(map[string]string, 0)
 	p.langChecker = lang.LangMapChecks[p.toLang]
 	p.fileName = strings.Split(filepath.Base(p.inputPath), ".")[0]
-
+	p.langChecker = nil
 	_, err := os.Stat(p.outputDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -196,12 +196,6 @@ func (p *DocxProcessor) ExtractText() error {
 		for _, r := range runs {
 			text := r.Text()
 
-			// 语言检查
-			if trimText := strings.TrimSpace(text); strings.TrimSpace(trimText) == "" || (p.langChecker != nil && p.langChecker.Check(trimText)) {
-				p.logger.Info(fmt.Sprintf("忽略文本块[%v]", text))
-				continue
-			}
-
 			segmentCount++
 			totalCount += len([]rune(text))
 
@@ -259,19 +253,25 @@ func (p *DocxProcessor) ProcessText() {
 		ants.WithPreAlloc(true),
 		ants.WithExpiryDuration(1))
 
-	for k, paragraph := range p.paraSet {
-		paraIdx := k
-		paraCopy := paragraph
-		paraStr := strings.Join(paraCopy, "|")
-		if p.langChecker != nil && p.langChecker.Check(paraStr) {
-			if p.logger != nil {
-				p.logger.Info("翻译跳过:%d [%s]", k, paraStr)
-			}
+	plen := len(p.paraSet)
+	for i := 0; i < plen; i++ {
+		paraIdx := i
+		paraCopy := p.paraSet[i]
+		startIdx := 0
+		endIdx := 0
 
-			p.rw.Lock()
-			p.tranParaSet = combineMap(p.tranParaSet, fillMap(paraCopy))
-			p.rw.Unlock()
-			continue
+		if i == 0 && plen > 1 {
+			endIdx = len(paraCopy)
+			paraCopy = append(paraCopy, p.paraSet[i+1]...)
+		} else if i == len(p.paraSet)-1 && plen > 1 {
+			paraCopy = append(p.paraSet[i-1], paraCopy...)
+			startIdx = len(p.paraSet[i-1])
+			endIdx = len(paraCopy)
+		} else {
+			paraCopy = append(p.paraSet[i-1], paraCopy...)
+			startIdx = len(p.paraSet[i-1])
+			endIdx = len(paraCopy)
+			paraCopy = append(paraCopy, p.paraSet[i+1]...)
 		}
 
 		p.wg.Add(1)
@@ -302,7 +302,7 @@ func (p *DocxProcessor) ProcessText() {
 			}
 
 			p.rw.Lock()
-			p.tranParaSet = combineMap(p.tranParaSet, fillMap(paraCopy, t))
+			p.tranParaSet = combineMap(p.tranParaSet, fillMap(p.paraSet[i], t[startIdx:endIdx]))
 			p.rw.Unlock()
 		})
 	}
