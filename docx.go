@@ -117,13 +117,11 @@ func (p *DocxProcessor) ExtractText() error {
 		p.elog.Debug("处理段落[%d],文字内容[%s]", idx, caluText.String())
 	}
 
-	if p.elog != nil {
-		p.elog.Info("文本提取完成")
-		p.elog.Info("总文字数量: %d", totalCharCnt)
-		p.elog.Info("文本块数量: %d", segmentCount)
-		p.elog.Info("段落数量: %d", len(paragraphs))
-		p.elog.Info("表格数量: %d", tableCount)
-	}
+	p.elog.Info("文本提取完成")
+	p.elog.Info("总文字数量: %d", totalCharCnt)
+	p.elog.Info("文本块数量: %d", segmentCount)
+	p.elog.Info("段落数量: %d", len(paragraphs))
+	p.elog.Info("表格数量: %d", tableCount)
 
 	return nil
 }
