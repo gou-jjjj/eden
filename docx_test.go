@@ -28,14 +28,14 @@ func TestNewDocxProcessor(t *testing.T) {
 		t.Log(err)
 		return
 	}
-	newLogger.SetLevel(logger.INFO)
-	open := translate.NewOpenai(translate.OpenRouter)
+	newLogger.SetLevel(logger.DEBUG)
+	open := translate.NewOpenai(translate.Ollama)
 
 	pr := NewDocxProcessor(
-		WithInput("/Users/calvin/go/src/eden/file_examples/Go20240617.docx"),
+		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
-		WithLang(lang.EN),
-		WithProcessFunc(translate.NewOpenaiWithLogger(translate.AliBaBa, newLogger, open)),
+		WithLang(lang.ZH),
+		WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
 		//WithProcessFunc(translate.NewMockTran()),
 		WithMaxGo(10),
 		WithLogger(newLogger),
@@ -47,8 +47,8 @@ func TestNewDocxProcessor(t *testing.T) {
 	}
 
 	// 检查日志文件是否生成
-	if pr.logger != nil {
-		logPath := pr.logger.GetLogFilePath()
+	if pr.elog != nil {
+		logPath := pr.elog.GetLogFilePath()
 		if _, err := os.Stat(logPath); os.IsNotExist(err) {
 			t.Errorf("日志文件未生成: %s", logPath)
 		} else {

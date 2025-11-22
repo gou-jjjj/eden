@@ -19,6 +19,7 @@ const (
 	GithubFree = "githubfree"
 	OpenRouter = "openrouter"
 	AliBaBa    = "alibaba"
+	Ollama     = "ollama"
 
 	Seq = "\n------------\n"
 )
@@ -32,6 +33,8 @@ var OpenaiModelList = map[string]struct {
 	GithubFree: {"https://api.chatanywhere.tech", "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5", "deepseek-v3"},
 	OpenRouter: {"https://openrouter.ai/api/v1", "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", "x-ai/grok-4-fast:free"},
 	AliBaBa:    {"https://dashscope.aliyuncs.com/compatible-mode/v1", "sk-227cf58d893d4a689e82d2b8eb8f3564", "qwen-plus"},
+	Ollama: {Url: "http://localhost:11434", // Ollama 默认地址
+		Model: "qwen3:30b"},
 }
 
 type TranOpenai struct {
@@ -102,7 +105,6 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 		msgs...,
 	)
 	content = append(content, llms.TextParts(llms.ChatMessageTypeHuman, contentMsg))
-	llm.Call()
 	generateContent, err := llm.GenerateContent(ctx, content)
 	if err != nil {
 		return nil, err

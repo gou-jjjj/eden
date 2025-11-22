@@ -3,7 +3,6 @@ package eden
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -15,68 +14,6 @@ import (
 	"github.com/gou-jjjj/unioffice/document"
 	"github.com/panjf2000/ants"
 )
-
-// 选项函数类型
-type Opt func(*DocxProcessor)
-
-// 选项设置函数
-func WithInput(path string) Opt {
-	return func(p *DocxProcessor) {
-		p.inputPath = path
-	}
-}
-
-func WithOutput(dir string) Opt {
-	return func(p *DocxProcessor) {
-		p.outputDir = dir
-	}
-}
-
-func WithLang(lg ...string) Opt {
-	to := lang.EN
-	if len(lg) == 1 {
-		to = lg[0]
-	}
-	from := lang.All
-	if len(lg) == 2 {
-		from = lg[0]
-		to = lg[1]
-	}
-	return func(p *DocxProcessor) {
-		p.fromLang = from
-		p.toLang = to
-	}
-}
-
-func WithProcessFunc(f translate.Translate) Opt {
-	return func(p *DocxProcessor) {
-		p.process = f
-	}
-}
-
-func WithLangChecker(checker lang.LanguageChecker) Opt {
-	return func(p *DocxProcessor) {
-		p.langChecker = checker
-	}
-}
-
-func WithMaxGo(maxGo int) Opt {
-	return func(p *DocxProcessor) {
-		p.maxGo = maxGo
-	}
-}
-
-func WithLogger(logger *logger.DocxLogger) Opt {
-	return func(p *DocxProcessor) {
-		p.logger = logger
-	}
-}
-
-func WithMaxToken(maxToken int) Opt {
-	return func(p *DocxProcessor) {
-		p.maxToken = maxToken
-	}
-}
 
 // DocxProcessor DOCX 处理器
 type DocxProcessor struct {
@@ -94,7 +31,7 @@ type DocxProcessor struct {
 	maxGo       int
 	process     translate.Translate
 	langChecker lang.LanguageChecker
-	logger      *logger.DocxLogger
+	elog        *logger.DocxLogger
 
 	rw sync.Mutex
 	wg sync.WaitGroup
@@ -113,14 +50,13 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 		p.maxGo = 1
 	}
 	if p.maxToken <= 0 {
-		p.maxToken = 1 << 16 // 默认最大文字数 65536
+		p.maxToken = 1 << 20
 	}
 
 	p.paraSet = make([]translate.Paragraph, 0)
 	p.tranParaSet = make(map[string]string, 0)
-	p.langChecker = lang.LangMapChecks[p.toLang]
+	//p.langChecker = lang.LangMapChecks[p.toLang]
 	p.fileName = strings.Split(filepath.Base(p.inputPath), ".")[0]
-	p.langChecker = nil
 	_, err := os.Stat(p.outputDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -129,12 +65,12 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 	}
 
 	// 初始化日志记录器
-	if p.logger == nil {
+	if p.elog == nil {
 		lg, err := logger.NewLogger(false, p.outputDir, p.fileName)
 		if err != nil {
-			fmt.Printf("警告: 无法创建日志记录器: %v\n", err)
+			fmt.Printf("无法创建日志记录器: %v\n", err)
 		} else {
-			p.logger = lg
+			p.elog = lg
 		}
 	}
 
@@ -145,16 +81,16 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 func (p *DocxProcessor) LoadFile() error {
 	if p.inputPath == "" {
 		err := fmt.Errorf("input path is required")
-		if p.logger != nil {
-			p.logger.LogFileLoad(false, "", err)
+		if p.elog != nil {
+			p.elog.LogFileLoad(false, "", err)
 		}
 		return err
 	}
 
 	f, err := document.Open(p.inputPath)
 	if err != nil {
-		if p.logger != nil {
-			p.logger.LogFileLoad(false, p.inputPath, err)
+		if p.elog != nil {
+			p.elog.LogFileLoad(false, p.inputPath, err)
 		}
 		return err
 	}
@@ -162,90 +98,77 @@ func (p *DocxProcessor) LoadFile() error {
 	p.f = f
 	p.closeFunc = f.Close
 
-	if p.logger != nil {
-		p.logger.LogFileLoad(true, p.inputPath, nil)
+	if p.elog != nil {
+		p.elog.LogFileLoad(true, p.inputPath, nil)
 	}
 	return nil
 }
 
 // ExtractText 从 DOCX 文件中提取文本内容
 func (p *DocxProcessor) ExtractText() error {
-	totalCount := 0
-	paragraphCount := 0
+	totalCharCnt := 0
 	segmentCount := 0
 	tableCount := len(p.f.Tables())
-	paraTmp := make(translate.Paragraph, 0, 1<<8)
-	caluText := strings.Builder{}
-
-	addText := func(s *strings.Builder, str string, clearOld bool) {
-		if clearOld {
-			s.Reset()
-		}
-		s.WriteString(str)
-		s.WriteString(translate.Seq)
-	}
 
 	paragraphs := p.f.Paragraphs()
 	for idx, paragraph := range paragraphs {
-		paragraphCount++
 		runs := paragraph.Runs()
-		if len(runs) == 0 {
-			continue
-		}
+		paraTmp := make(translate.Paragraph, 0, 1<<8)
+		caluText := strings.Builder{}
+		charCnt := 0
 
-		for _, r := range runs {
-			text := r.Text()
-
-			segmentCount++
-			totalCount += len([]rune(text))
-
-			if p.logger != nil {
-				p.logger.LogParagraphProcessing(segmentCount, text, true)
-			}
-			addText(&caluText, text, false)
-
-			// 检查长度
-			if len([]rune(caluText.String())) > p.maxToken && len(paraTmp) > 0 {
-				p.paraSet = append(p.paraSet, paraTmp)
-				paraTmp = make(translate.Paragraph, 0)
-				addText(&caluText, text, true)
-			}
+		_ = p.handleRuns(runs, func(i int, text string) string {
 			paraTmp = append(paraTmp, text)
-		}
-
-		// 最后
-		if idx == len(paragraphs)-1 && len(paraTmp) > 0 {
-			p.paraSet = append(p.paraSet, paraTmp)
-			paraTmp = make(translate.Paragraph, 0)
-			caluText.Reset()
-		}
+			caluText.WriteString(text)
+			charCnt += len([]rune(text))
+			return text
+		})
+		p.paraSet = append(p.paraSet, paraTmp)
+		segmentCount += len(paraTmp)
+		totalCharCnt += charCnt
+		p.elog.Info("处理段落[%d], 字符个数:[%d], 文字块个数:[%d],",
+			idx, charCnt, len(paraTmp))
+		p.elog.Debug("处理段落[%d],文字内容[%s]", idx, caluText.String())
 	}
 
-	if p.logger != nil {
-		p.logger.LogTextExtraction(paragraphCount, segmentCount, tableCount, totalCount)
+	if p.elog != nil {
+		p.elog.Info("文本提取完成")
+		p.elog.Info("总文字数量: %d", totalCharCnt)
+		p.elog.Info("文本块数量: %d", segmentCount)
+		p.elog.Info("段落数量: %d", len(paragraphs))
+		p.elog.Info("表格数量: %d", tableCount)
 	}
 
 	return nil
 }
 
+func (p *DocxProcessor) handleRuns(runs []document.Run, f func(int, string) string) []document.Run {
+	for i, r := range runs {
+		text := r.Text()
+		text = f(i, text)
+		runs[i].AddText(text)
+	}
+	return runs
+}
+
 // ProcessText 处理文本内容
 func (p *DocxProcessor) ProcessText() {
 	if p.process == nil {
-		if p.logger != nil {
-			p.logger.Warn("没有设置翻译处理器，跳过翻译")
+		if p.elog != nil {
+			p.elog.Warn("没有设置翻译处理器，跳过翻译")
 		}
 		return // 如果没有处理函数，返回原文本
 	}
 
 	if len(p.paraSet) == 0 {
-		if p.logger != nil {
-			p.logger.Info("没有需要翻译的段落")
+		if p.elog != nil {
+			p.elog.Info("没有需要翻译的段落")
 		}
 		return
 	}
 
-	if p.logger != nil {
-		p.logger.Info("开始翻译%d个分块", len(p.paraSet))
+	if p.elog != nil {
+		p.elog.Info("开始翻译%d个分块", len(p.paraSet))
 	}
 
 	pool, _ := ants.NewPool(p.maxGo,
@@ -279,9 +202,9 @@ func (p *DocxProcessor) ProcessText() {
 			defer p.wg.Done()
 
 			// 记录翻译请求
-			if p.logger != nil {
+			if p.elog != nil {
 				text := strings.Join(paraCopy, " ")
-				p.logger.LogTranslationRequest(paraIdx, p.fromLang, p.toLang, text)
+				p.elog.LogTranslationRequest(paraIdx, p.fromLang, p.toLang, text)
 			}
 
 			t, err := p.process.T(&translate.TranReq{
@@ -291,13 +214,13 @@ func (p *DocxProcessor) ProcessText() {
 			})
 
 			// 记录翻译响应
-			if p.logger != nil {
+			if p.elog != nil {
 				if err != nil {
-					p.logger.LogTranslationResponse(paraIdx, false, "", err)
+					p.elog.LogTranslationResponse(paraIdx, false, "", err)
 					return
 				} else {
 					translatedText := strings.Join(t, "|")
-					p.logger.LogTranslationResponse(paraIdx, true, translatedText, nil)
+					p.elog.LogTranslationResponse(paraIdx, true, translatedText, nil)
 				}
 			}
 
@@ -313,8 +236,8 @@ func (p *DocxProcessor) ProcessText() {
 
 // WriteChanges 将处理后的内容写回 DOCX 文件
 func (p *DocxProcessor) WriteChanges() {
-	if p.logger != nil {
-		p.logger.Info("开始将翻译结果写回文档")
+	if p.elog != nil {
+		p.elog.Info("开始将翻译结果写回文档")
 	}
 
 	paragraphs := p.f.Paragraphs()
@@ -334,8 +257,8 @@ func (p *DocxProcessor) WriteChanges() {
 		}
 	}
 
-	if p.logger != nil {
-		p.logger.Info("翻译结果写回完成")
+	if p.elog != nil {
+		p.elog.Info("翻译结果写回完成")
 	}
 }
 
@@ -344,9 +267,9 @@ func (p *DocxProcessor) Process() error {
 	startTime := time.Now()
 
 	// 记录翻译开始
-	if p.logger != nil {
-		p.logger.LogTranslationStart(p.inputPath, p.fromLang, p.toLang)
-		p.logger.Info("翻译器:%+v,文件名字:%+v,翻译最大并发数量:%+v",
+	if p.elog != nil {
+		p.elog.LogTranslationStart(p.inputPath, p.fromLang, p.toLang)
+		p.elog.Info("翻译器:%+v,文件名字:%+v,翻译最大并发数量:%+v",
 			p.process.Name(), p.fileName, p.maxGo)
 	}
 
@@ -356,46 +279,46 @@ func (p *DocxProcessor) Process() error {
 		}
 
 		// 关闭日志记录器
-		if p.logger != nil {
-			_ = p.logger.Close()
+		if p.elog != nil {
+			_ = p.elog.Close()
 		}
 	}()
 
 	// 1. 加载文件
 	if err := p.LoadFile(); err != nil {
-		if p.logger != nil {
-			p.logger.LogTranslationEnd("", false, time.Since(startTime))
+		if p.elog != nil {
+			p.elog.LogTranslationEnd("", false, time.Since(startTime))
 		}
 		return err
 	}
 
 	// 2. 提取文本
 	if err := p.ExtractText(); err != nil {
-		if p.logger != nil {
-			p.logger.LogTranslationEnd("", false, time.Since(startTime))
+		if p.elog != nil {
+			p.elog.LogTranslationEnd("", false, time.Since(startTime))
 		}
 		return err
 	}
 
 	// 3. 处理文本
-	p.ProcessText()
-
-	// 4. 写回修改
-	p.WriteChanges()
+	//p.ProcessText()
+	//
+	//// 4. 写回修改
+	//p.WriteChanges()
 
 	// 5. 保存文件
-	outPath := path.Join(p.outputDir, fmt.Sprintf("%s_%s.docx", p.fileName, lang.LangNames[p.toLang]))
-	err := p.f.SaveToFile(outPath)
+	//outPath := path.Join(p.outputDir, fmt.Sprintf("%s_%s.docx", p.fileName, lang.LangNames[p.toLang]))
+	//err := p.f.SaveToFile(outPath)
 
 	// 记录文件保存结果
-	if p.logger != nil {
-		p.logger.LogFileSave(err == nil, outPath, err)
+	//if p.elog != nil {
+	//	p.elog.LogFileSave(err == nil, outPath, err)
+	//
+	//	// 记录翻译结束
+	//	p.elog.LogTranslationEnd(outPath, err == nil, time.Since(startTime))
+	//}
 
-		// 记录翻译结束
-		p.logger.LogTranslationEnd(outPath, err == nil, time.Since(startTime))
-	}
-
-	return err
+	return nil
 }
 
 func fillMap(src ...[]string) map[string]string {
