@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -89,7 +90,7 @@ func (t *AiTran) translationFlow(req *TranReq) error {
 	return nil
 }
 
-func (t *AiTran) splitFlow(req *TranReq) (string, error) {
+func (t *AiTran) splitFlow(req *TranReq) error {
 	const prompt = `
 请将以下JSON数据中 output.segment 字段的内容翻译成中文，并严格保持原有的JSON结构不变。
 
@@ -128,10 +129,37 @@ func (t *AiTran) splitFlow(req *TranReq) (string, error) {
 	content := fmt.Sprintf(prompt, data)
 	call, err := t.call(content, llms.WithJSONMode(), llms.WithTemperature(0.5))
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return call, nil
+	req.TranslatedJson = call
+	return nil
+}
+
+func (t *AiTran) getResFlow(req *TranReq) ([]string, error) {
+	const prompt = `
+请将以下JSON字符串中 output.segment 数据解析出来,通过%s隔开。
+
+我给你的数据是：
+
+{"input": {"text": "hello world!", "segment": ["hello ", "world!"]}, "output": {"text": "你好 世界！", "segment": ["你好 ", "世界！"]}}
+
+你给我的结果应该是：
+
+你好%s世界！
+
+数据如下:
+
+%s
+`
+	randStr := fmt.Sprintf("\n%d\n", rand.Int())
+	content := fmt.Sprintf(prompt, randStr, randStr, req.TranslatedJson)
+	call, err := t.call(content, llms.WithTemperature(0.1))
+	if err != nil {
+		return nil, err
+	}
+
+	return strings.Split(call, randStr), nil
 }
 
 func (t *AiTran) addLog(req *TranReq, res []string) {
@@ -168,12 +196,17 @@ func (t *AiTran) T(req *TranReq) ([]string, error) {
 		return nil, err
 	}
 
-	_, err = t.splitFlow(req)
+	err = t.splitFlow(req)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	flow, err := t.getResFlow(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return flow, nil
 }
 
 func (t *AiTran) model() llms.Model {

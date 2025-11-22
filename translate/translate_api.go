@@ -9,6 +9,7 @@ type TranReq struct {
 
 	TParas         Paragraph `json:"-"`
 	TranslatedText string    `json:"-"`
+	TranslatedJson string    `json:"-"`
 }
 
 type Translate interface {
