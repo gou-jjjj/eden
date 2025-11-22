@@ -113,15 +113,6 @@ func (t *AiTran) splitFlow(req *TranReq) (string, error) {
 
 %s
 `
-	type msg struct {
-		T string   `json:"text"`
-		S []string `json:"segment"`
-	}
-
-	type m struct {
-		I msg `json:"input"`
-		O msg `json:"output"`
-	}
 
 	data, _ := json.Marshal(m{
 		I: msg{
@@ -200,3 +191,15 @@ func (t *AiTran) nextModel() llms.Model {
 	t.mIdx++
 	return t.model()
 }
+
+type (
+	msg struct {
+		T string   `json:"text"`
+		S []string `json:"segment"`
+	}
+
+	m struct {
+		I msg `json:"input"`
+		O msg `json:"output"`
+	}
+)
