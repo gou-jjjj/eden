@@ -236,10 +236,11 @@ func (p *DocxProcessor) WriteChanges() {
 
 // Process 执行完整的 DOCX 处理流程
 func (p *DocxProcessor) Process() error {
-
 	// 记录翻译开始
 	p.elog.Info("翻译器:%+v,文件名字:%+v", p.process.Name(), p.fileName)
-
+	if p.closeFunc == nil {
+		defer p.closeFunc()
+	}
 	// 1. 加载文件
 	if err := p.LoadFile(); err != nil {
 		return err
