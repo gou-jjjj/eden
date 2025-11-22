@@ -112,33 +112,31 @@ func (t *AiTran) translationFlow(req *TranReq) (string, error) {
 }
 
 func (t *AiTran) addLog(req *TranReq, res []string) {
-	if t.elog != nil {
-		s := strings.Builder{}
-		for i := 0; i < max(len(req.Paras), len(res)); i++ {
-			if i < len(req.Paras) {
-				s.WriteString(fmt.Sprintf("[%s]->", req.Paras[i]))
-			} else {
-				s.WriteString("[] ")
-			}
-			if i < len(res) {
-				s.WriteString(fmt.Sprintf("[%s] ", res[i]))
-			} else {
-				s.WriteString("[] ")
-			}
-			s.WriteString(Seq)
+	s := strings.Builder{}
+	for i := 0; i < max(len(req.Paras), len(res)); i++ {
+		if i < len(req.Paras) {
+			s.WriteString(fmt.Sprintf("[%s]->", req.Paras[i]))
+		} else {
+			s.WriteString("[] ")
 		}
-
-		_ = os.WriteFile(
-			fmt.Sprintf("error_resp_%d.log", time.Now().Unix()),
-			[]byte(s.String()),
-			0644,
-		)
-		t.elog.Warn(
-			"翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失",
-			slog.Int("req_para_count", len(req.Paras)),
-			slog.Int("resp_para_count", len(res)),
-		)
+		if i < len(res) {
+			s.WriteString(fmt.Sprintf("[%s] ", res[i]))
+		} else {
+			s.WriteString("[] ")
+		}
+		s.WriteString(Seq)
 	}
+
+	_ = os.WriteFile(
+		fmt.Sprintf("error_resp_%d.log", time.Now().Unix()),
+		[]byte(s.String()),
+		0644,
+	)
+	t.elog.Warn(
+		"翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失",
+		slog.Int("req_para_count", len(req.Paras)),
+		slog.Int("resp_para_count", len(res)),
+	)
 }
 
 func (t *AiTran) T(req *TranReq) (string, error) {
@@ -148,10 +146,6 @@ func (t *AiTran) T(req *TranReq) (string, error) {
 	}
 
 	return flow, nil
-}
-
-func (t *AiTran) Name() string {
-	return "OpenAI"
 }
 
 func (t *AiTran) model() llms.Model {
