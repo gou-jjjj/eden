@@ -256,11 +256,8 @@ func (p *DocxProcessor) Process() error {
 	startTime := time.Now()
 
 	// 记录翻译开始
-	if p.elog != nil {
-		p.elog.LogTranslationStart(p.inputPath, p.fromLang, p.toLang)
-		p.elog.Info("翻译器:%+v,文件名字:%+v",
-			p.process.Name(), p.fileName)
-	}
+	p.elog.LogTranslationStart(p.inputPath, p.fromLang, p.toLang)
+	p.elog.Info("翻译器:%+v,文件名字:%+v", p.process.Name(), p.fileName)
 
 	defer func() {
 		if p.closeFunc != nil {
@@ -268,24 +265,18 @@ func (p *DocxProcessor) Process() error {
 		}
 
 		// 关闭日志记录器
-		if p.elog != nil {
-			_ = p.elog.Close()
-		}
+		_ = p.elog.Close()
 	}()
 
 	// 1. 加载文件
 	if err := p.LoadFile(); err != nil {
-		if p.elog != nil {
-			p.elog.LogTranslationEnd("", false, time.Since(startTime))
-		}
+		p.elog.LogTranslationEnd("", false, time.Since(startTime))
 		return err
 	}
 
 	// 2. 提取文本
 	if err := p.ExtractText(); err != nil {
-		if p.elog != nil {
-			p.elog.LogTranslationEnd("", false, time.Since(startTime))
-		}
+		p.elog.LogTranslationEnd("", false, time.Since(startTime))
 		return err
 	}
 
