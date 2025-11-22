@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -254,20 +255,16 @@ func (p *DocxProcessor) Process() error {
 	//3. 处理文本
 	p.ProcessText()
 
-	//// 4. 写回修改
-	//p.WriteChanges()
+	// 4. 写回修改
+	p.WriteChanges()
 
-	// 5. 保存文件
-	//outPath := path.Join(p.outputDir, fmt.Sprintf("%s_%s.docx", p.fileName, lang.LangNames[p.toLang]))
-	//err := p.f.SaveToFile(outPath)
-
-	// 记录文件保存结果
-	//if p.elog != nil {
-	//	p.elog.LogFileSave(err == nil, outPath, err)
-	//
-	//	// 记录翻译结束
-	//	p.elog.LogTranslationEnd(outPath, err == nil, time.Since(startTime))
-	//}
+	//5. 保存文件
+	outPath := path.Join(p.outputDir, fmt.Sprintf("%s_%s.docx", p.fileName, lang.LangNames[p.toLang]))
+	err := p.f.SaveToFile(outPath)
+	if err != nil {
+		return err
+	}
+	p.elog.Info("文件处理完成，输出路径: %s", outPath)
 
 	return nil
 }
