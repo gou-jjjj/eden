@@ -29,7 +29,7 @@ func TestNewDocxProcessor(t *testing.T) {
 		return
 	}
 	newLogger.SetLevel(logger.DEBUG)
-	open := translate.NewOpenai(translate.Ollama)
+	open := translate.NewAiTran(translate.Ollama)
 
 	pr := NewDocxProcessor(
 		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"),

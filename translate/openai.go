@@ -42,7 +42,7 @@ type AiTran struct {
 	elog   *slog.Logger
 }
 
-func NewOpenai(ctx context.Context, elog *slog.Logger, retry int, models ...llms.Model) *AiTran {
+func NewAiTran(ctx context.Context, elog *slog.Logger, retry int, models ...llms.Model) *AiTran {
 	t := &AiTran{
 		ctx:   ctx,
 		retry: retry,
@@ -76,7 +76,7 @@ func (t *AiTran) call(content string, option ...llms.CallOption) (string, error)
 TRAN:
 	llmResp, err := llm.Call(t.ctx, content, option...)
 	if err != nil {
-		t.elog.WarnContext(t.ctx, "模型请求失败：%v", err.Error())
+		t.elog.WarnContext(t.ctx, "模型请求失败", slog.Any("err", err))
 		llm = t.nextModel()
 		if llm != nil {
 			goto TRAN
@@ -134,8 +134,9 @@ func (t *AiTran) addLog(req *TranReq, res []string) {
 			0644,
 		)
 		t.elog.Warn(
-			"翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失，req:%d, res:%d",
-			len(req.Paras), len(res),
+			"翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失",
+			slog.Int("req_para_count", len(req.Paras)),
+			slog.Int("resp_para_count", len(res)),
 		)
 	}
 }

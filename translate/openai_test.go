@@ -32,7 +32,7 @@ func TestNewOpenai(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	o := NewOpenai(context.Background(), nil, 3, llm)
+	o := NewAiTran(context.Background(), nil, 3, llm)
 	s, err := o.T(&TranReq{
 		From: "英语",
 		To:   "简体中文",
