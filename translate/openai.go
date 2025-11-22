@@ -33,53 +33,32 @@ var OpenaiModelList = map[string]struct {
 	GithubFree: {"https://api.chatanywhere.tech", "sk-vINYqBzbzrhdsFxZCO7MSSEvHL8tPradBhl77tLmWmEoTXs5", "deepseek-v3"},
 	OpenRouter: {"https://openrouter.ai/api/v1", "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", "x-ai/grok-4-fast:free"},
 	AliBaBa:    {"https://dashscope.aliyuncs.com/compatible-mode/v1", "sk-227cf58d893d4a689e82d2b8eb8f3564", "qwen-plus"},
-	Ollama: {Url: "http://localhost:11434", // Ollama 默认地址
-		Model: "qwen3:30b"},
+	Ollama:     {Url: "http://localhost:11434", Model: "qwen3:30b"},
 }
 
-type TranOpenai struct {
-	url    string
-	key    string
-	model  string
-	back   *TranOpenai
+type AiTran struct {
+	retry  int
+	models []*llms.Model
 	logger logger.Logger
 }
 
-func NewOpenai(llmSource string, backTranOpenai ...*TranOpenai) *TranOpenai {
-	s, ok := OpenaiModelList[llmSource]
-	if !ok {
-		return nil
+func NewOpenai(log logger.Logger, retry int, models ...llms.Model) *AiTran {
+	t := &AiTran{
+		retry:  retry,
+		logger: log,
 	}
-	return &TranOpenai{
-		url:   s.Url,
-		key:   s.Key,
-		model: s.Model,
-		back: func() *TranOpenai {
-			if len(backTranOpenai) > 0 {
-				return backTranOpenai[0]
-			}
-			return nil
-		}(),
-	}
-}
 
-func NewOpenaiWithLogger(llmSource string, logger logger.Logger, backTranOpenai ...*TranOpenai) *TranOpenai {
-	s, ok := OpenaiModelList[llmSource]
-	if !ok {
-		return nil
+	if t.logger == nil {
+		t.logger = logger.DefaultLogger
 	}
-	return &TranOpenai{
-		url:    s.Url,
-		key:    s.Key,
-		model:  s.Model,
-		logger: logger,
-		back: func() *TranOpenai {
-			if len(backTranOpenai) > 0 {
-				return backTranOpenai[0]
-			}
-			return nil
-		}(),
+
+	for _, m := range models {
+		if m != nil {
+			models = append(models, m)
+		}
 	}
+
+	return t
 }
 
 // 仅执行一次翻译，不再包含任何重试

@@ -35,8 +35,8 @@ func TestNewDocxProcessor(t *testing.T) {
 		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"),
 		WithOutput("./out"),
 		WithLang(lang.ZH),
-		WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
-		//WithProcessFunc(translate.NewMockTran()),
+		//WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
+		WithProcessFunc(translate.NewMockTran()),
 		WithLogger(newLogger),
 		WithMaxToken(100))
 

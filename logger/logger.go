@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var DefaultLogger, _ = NewLogger(true, "./logs", "default_logger")
+
 // Logger 日志接口
 type Logger interface {
 	Debug(format string, args ...interface{})
@@ -125,90 +127,6 @@ func (l *DocxLogger) Warn(format string, args ...interface{}) {
 // Error 记录错误信息
 func (l *DocxLogger) Error(format string, args ...interface{}) {
 	l.writeLog(ERROR, format, args...)
-}
-
-// LogTranslationStart 记录翻译开始
-func (l *DocxLogger) LogTranslationStart(inputPath, fromLang, toLang string) {
-	l.Info("=== 翻译任务开始 ===")
-	l.Info("输入文件: %s", inputPath)
-	l.Info("源语言: %s", fromLang)
-	l.Info("目标语言: %s", toLang)
-	l.Info("开始时间: %s", time.Now().Format("2006-01-02 15:04:05"))
-}
-
-// LogTranslationEnd 记录翻译结束
-func (l *DocxLogger) LogTranslationEnd(outputPath string, success bool, duration time.Duration) {
-	if success {
-		l.Info("=== 翻译任务完成 ===")
-		l.Info("输出文件: %s", outputPath)
-		l.Info("耗时: %v", duration)
-		l.Info("状态: 成功")
-	} else {
-		l.Error("=== 翻译任务失败 ===")
-		l.Error("耗时: %v", duration)
-		l.Error("状态: 失败")
-	}
-}
-
-// LogFileLoad 记录文件加载
-func (l *DocxLogger) LogFileLoad(success bool, filePath string, err error) {
-	if success {
-		l.Info("文件加载成功: %s", filePath)
-	} else {
-		l.Error("文件加载失败: %s, 错误: %v", filePath, err)
-	}
-}
-
-// LogTextExtraction 记录文本提取
-func (l *DocxLogger) LogTextExtraction(paragraphCount, segmentCount, tableCount, totalCount int) {
-	l.Info("文本提取完成")
-	l.Info("总文字数量: %d", totalCount)
-	l.Info("段落数量: %d", paragraphCount)
-	l.Info("文本块数量: %d", segmentCount)
-	l.Info("表格数量: %d", tableCount)
-}
-
-// LogParagraphProcessing 记录段落处理
-func (l *DocxLogger) LogParagraphProcessing(paragraphIndex int, originalText string, needTranslation bool) {
-	if needTranslation {
-		l.Debug("文字块%d[%s]", paragraphIndex, originalText)
-	} else {
-		l.Debug("文字块%d跳过翻译:[%s]", paragraphIndex, originalText)
-	}
-}
-
-// LogTranslationRequest 记录翻译请求
-func (l *DocxLogger) LogTranslationRequest(paragraphIndex int, fromLang, toLang string, text string) {
-	l.Info("发送翻译请求 - 段落 %d", paragraphIndex)
-	l.Debug("翻译内容: %s", text)
-}
-
-// LogTranslationResponse 记录翻译响应
-func (l *DocxLogger) LogTranslationResponse(paragraphIndex int, success bool, translatedText string, err error) {
-	if success {
-		l.Info("翻译完成 - 段落 %d", paragraphIndex)
-		l.Debug("翻译结果: %s", translatedText)
-	} else {
-		l.Error("翻译失败 - 段落 %d, 错误: %v", paragraphIndex, err)
-	}
-}
-
-// LogFileSave 记录文件保存
-func (l *DocxLogger) LogFileSave(success bool, outputPath string, err error) {
-	if success {
-		l.Info("文件保存成功: %s", outputPath)
-	} else {
-		l.Error("文件保存失败: %s, 错误: %v", outputPath, err)
-	}
-}
-
-// LogStatistics 记录统计信息
-func (l *DocxLogger) LogStatistics(totalParagraphs, translatedParagraphs, skippedParagraphs int) {
-	l.Info("=== 翻译统计 ===")
-	l.Info("总段落数: %d", totalParagraphs)
-	l.Info("已翻译: %d", translatedParagraphs)
-	l.Info("跳过翻译: %d", skippedParagraphs)
-	l.Info("翻译率: %.2f%%", float64(translatedParagraphs)/float64(totalParagraphs)*100)
 }
 
 // Close 关闭日志记录器
