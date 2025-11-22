@@ -39,17 +39,17 @@ var OpenaiModelList = map[string]struct {
 type AiTran struct {
 	retry  int
 	models []*llms.Model
-	logger logger.Logger
+	elog   logger.Logger
 }
 
-func NewOpenai(log logger.Logger, retry int, models ...llms.Model) *AiTran {
+func NewOpenai(elog logger.Logger, retry int, models ...llms.Model) *AiTran {
 	t := &AiTran{
-		retry:  retry,
-		logger: log,
+		retry: retry,
+		elog:  elog,
 	}
 
-	if t.logger == nil {
-		t.logger = logger.DefaultLogger
+	if t.elog == nil {
+		t.elog = logger.DefaultLogger
 	}
 
 	for _, m := range models {
@@ -62,17 +62,8 @@ func NewOpenai(log logger.Logger, retry int, models ...llms.Model) *AiTran {
 }
 
 // 仅执行一次翻译，不再包含任何重试
-func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
+func (t *AiTran) performTranslation(req *TranReq) (Paragraph, error) {
 	ctx := context.Background()
-	llm, err := openai.New(
-		openai.WithBaseURL(t.url),
-		openai.WithModel(t.model),
-		openai.WithToken(t.key),
-		openai.WithAPIType(openai.APITypeOpenAI),
-	)
-	if err != nil {
-		return nil, err
-	}
 
 	msgs := samplePrompt[getLangKey(lang.ZH, lang.EN)]
 	contentMsg := strings.Join(req.Paras, Seq)
@@ -103,8 +94,8 @@ func (t *TranOpenai) performTranslation(req *TranReq) (Paragraph, error) {
 	return res, nil
 }
 
-func (t *TranOpenai) addLog(req *TranReq, res []string) {
-	if t.logger != nil {
+func (t *AiTran) addLog(req *TranReq, res []string) {
+	if t.elog != nil {
 		s := strings.Builder{}
 		for i := 0; i < max(len(req.Paras), len(res)); i++ {
 			if i < len(req.Paras) {
@@ -125,7 +116,7 @@ func (t *TranOpenai) addLog(req *TranReq, res []string) {
 			[]byte(s.String()),
 			0644,
 		)
-		t.logger.Warn(
+		t.elog.Warn(
 			"翻译结果段落数与请求段落数不匹配，可能存在部分翻译丢失，req:%d, res:%d",
 			len(req.Paras), len(res),
 		)
@@ -133,28 +124,25 @@ func (t *TranOpenai) addLog(req *TranReq, res []string) {
 }
 
 // 不再带重试，只执行一次，失败后自动使用备用翻译器
-func (t *TranOpenai) T(req *TranReq) (Paragraph, error) {
+func (t *AiTran) T(req *TranReq) (Paragraph, error) {
 	result, err := t.performTranslation(req)
 	if err == nil {
 		return result, nil
 	}
 
-	if t.logger != nil {
-		t.logger.Warn("主翻译器失败: %v", err)
-	}
+	t.elog.Warn("主翻译器失败: %v", err)
 
 	// 使用备用翻译器
-	if t.back != nil {
-		if t.logger != nil {
-			t.logger.Info("尝试备用翻译器")
-		}
-		return t.back.T(req)
+
+	if t.elog != nil {
+		t.elog.Info("尝试备用翻译器")
 	}
+	return t.back.T(req)
 
 	return nil, err
 }
 
-func (t *TranOpenai) Name() string {
+func (t *AiTran) Name() string {
 	return "OpenAI"
 }
 
