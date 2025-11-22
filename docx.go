@@ -2,13 +2,13 @@ package eden
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/gou-jjjj/eden/lang"
-	"github.com/gou-jjjj/eden/logger"
 	"github.com/gou-jjjj/eden/translate"
 	"github.com/gou-jjjj/unioffice/document"
 	"github.com/panjf2000/ants"
@@ -34,7 +34,7 @@ type DocxProcessor struct {
 	outputDir   string
 	process     translate.Translate
 	langChecker lang.LanguageChecker
-	elog        *logger.DocxLogger
+	elog        *slog.Logger
 
 	rw sync.Mutex
 	wg sync.WaitGroup
@@ -66,12 +66,7 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 
 	// 初始化日志记录器
 	if p.elog == nil {
-		lg, err := logger.NewLogger(false, p.outputDir, p.fileName)
-		if err != nil {
-			fmt.Printf("无法创建日志记录器: %v\n", err)
-		} else {
-			p.elog = lg
-		}
+		p.elog = slog.Default()
 	}
 
 	return p
@@ -81,13 +76,11 @@ func NewDocxProcessor(opts ...Opt) *DocxProcessor {
 func (p *DocxProcessor) LoadFile() error {
 	if p.inputPath == "" {
 		err := fmt.Errorf("input path is required")
-		p.elog.Close()
 		return err
 	}
 
 	f, err := document.Open(p.inputPath)
 	if err != nil {
-		p.elog.Close()
 		return err
 	}
 
@@ -248,15 +241,6 @@ func (p *DocxProcessor) Process() error {
 
 	// 记录翻译开始
 	p.elog.Info("翻译器:%+v,文件名字:%+v", p.process.Name(), p.fileName)
-
-	defer func() {
-		if p.closeFunc != nil {
-			_ = p.closeFunc()
-		}
-
-		// 关闭日志记录器
-		_ = p.elog.Close()
-	}()
 
 	// 1. 加载文件
 	if err := p.LoadFile(); err != nil {

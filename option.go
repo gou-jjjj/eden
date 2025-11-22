@@ -1,8 +1,9 @@
 package eden
 
 import (
+	"log/slog"
+
 	"github.com/gou-jjjj/eden/lang"
-	"github.com/gou-jjjj/eden/logger"
 	"github.com/gou-jjjj/eden/translate"
 )
 
@@ -50,7 +51,7 @@ func WithLangChecker(checker lang.LanguageChecker) Opt {
 	}
 }
 
-func WithLogger(logger *logger.DocxLogger) Opt {
+func WithLogger(logger *slog.Logger) Opt {
 	return func(p *DocxProcessor) {
 		p.elog = logger
 	}
