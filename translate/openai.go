@@ -3,12 +3,12 @@ package translate
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/gou-jjjj/eden/lang"
-	"github.com/gou-jjjj/eden/logger"
 	"github.com/tmc/langchaingo/llms"
 )
 
@@ -39,10 +39,10 @@ type AiTran struct {
 	retry  int
 	mIdx   int
 	models []llms.Model
-	elog   logger.Logger
+	elog   *slog.Logger
 }
 
-func NewOpenai(ctx context.Context, elog logger.Logger, retry int, models ...llms.Model) *AiTran {
+func NewOpenai(ctx context.Context, elog *slog.Logger, retry int, models ...llms.Model) *AiTran {
 	t := &AiTran{
 		ctx:   ctx,
 		retry: retry,
@@ -50,14 +50,13 @@ func NewOpenai(ctx context.Context, elog logger.Logger, retry int, models ...llm
 	}
 
 	if t.elog == nil {
-		t.elog = logger.DefaultLogger
+		t.elog = slog.Default()
 	}
 
 	if t.ctx == nil {
 		t.ctx = context.Background()
 	}
 
-	// 修复：正确初始化 models 切片
 	t.models = make([]llms.Model, 0)
 	for _, m := range models {
 		if m != nil {
@@ -77,7 +76,7 @@ func (t *AiTran) call(content string, option ...llms.CallOption) (string, error)
 TRAN:
 	llmResp, err := llm.Call(t.ctx, content, option...)
 	if err != nil {
-		t.elog.Warn("模型请求失败：%v", err)
+		t.elog.WarnContext(t.ctx, "模型请求失败：%v", err.Error())
 		llm = t.nextModel()
 		if llm != nil {
 			goto TRAN
@@ -89,8 +88,27 @@ TRAN:
 }
 
 // 仅执行一次翻译，不再包含任何重试
-func (t *AiTran) performTranslation(req *TranReq) (Paragraph, error) {
-	return nil, nil
+func (t *AiTran) translationFlow(req *TranReq) (string, error) {
+	const prompt = `
+你是一个机器翻译专家，精通多种语言之间的翻译。请将以下内容从%s翻译成%s。
+1. 请保留所有额外的符号，如代码块中的标点符号、缩进和换行符。
+2. 请确保翻译准确且符合目标语言的语法和文化习惯。
+3. 请保持每个段落的结构与原文一致，不要合并或拆分段落。
+4. 如果遇到专有名词或技术术语，请尽量保留其原始形式，确保其在翻译后仍然易于识别和理解。
+5. 请避免在翻译中添加任何额外的解释或注释。
+6. 请严格按照提供的段落顺序进行翻译，确保翻译结果的段落顺序与原文一致。
+7. 如果某个段落无法翻译，请返回原始段落内容，而不是省略它。
+下面是需要翻译的内容：
+
+%s
+`
+	content := fmt.Sprintf(prompt, req.From, req.To, strings.Join(req.Paras, ""))
+	call, err := t.call(content)
+	if err != nil {
+		return "", err
+	}
+
+	return call, nil
 }
 
 func (t *AiTran) addLog(req *TranReq, res []string) {
@@ -122,10 +140,13 @@ func (t *AiTran) addLog(req *TranReq, res []string) {
 	}
 }
 
-// 不再带重试，只执行一次，失败后自动使用备用翻译器
-func (t *AiTran) T(req *TranReq) (Paragraph, error) {
+func (t *AiTran) T(req *TranReq) (string, error) {
+	flow, err := t.translationFlow(req)
+	if err != nil {
+		return "", err
+	}
 
-	return nil, nil
+	return flow, nil
 }
 
 func (t *AiTran) Name() string {
