@@ -104,8 +104,10 @@ func (p *DocxProcessor) ExtractText() error {
 		caluText := strings.Builder{}
 		charCnt := 0
 
-		_ = p.handleRuns(runs, func(i int, text string) string {
-			paraTmp = append(paraTmp, text)
+		_ = p.handleRuns(runs, func(i int, run document.Run) string {
+			fmt.Println(run.Text(), run.Properties().Font(), run.Properties().Bold(), *run.Properties().GetColor().AsRGBAString(), run.Properties().SizeValue())
+			text := run.Text()
+			paraTmp = append(paraTmp, run.Text())
 			caluText.WriteString(text)
 			charCnt += len([]rune(text))
 			return text
@@ -132,10 +134,9 @@ func (p *DocxProcessor) ExtractText() error {
 	return nil
 }
 
-func (p *DocxProcessor) handleRuns(runs []document.Run, f func(int, string) string) []document.Run {
+func (p *DocxProcessor) handleRuns(runs []document.Run, f func(int, document.Run) string) []document.Run {
 	for i, r := range runs {
-		text := r.Text()
-		text = f(i, text)
+		text := f(i, r)
 		runs[i].AddText(text)
 	}
 	return runs

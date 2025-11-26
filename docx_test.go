@@ -21,9 +21,9 @@ func debugDelete() {
 
 func TestNewDocxProcessor(t *testing.T) {
 	pr := NewDocxProcessor(
-		WithInput("C:\\Users\\Administrator\\go\\src\\eden\\file_examples\\Docx4j_GettingStarted.docx"),
+		WithInput("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Go20240617.docx"),
 		WithOutput("./out"),
-		WithLang(lang.ZH),
+		WithLang(lang.EN),
 		//WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
 		WithProcessFunc(translate.NewMockTran()),
 		WithMaxToken(100))
