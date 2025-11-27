@@ -93,8 +93,11 @@ func (p *DocxProcessor) LoadFile() error {
 
 // ExtractText 从 DOCX 文件中提取文本内容
 func (p *DocxProcessor) ExtractText() error {
+	const defaultStyle = "_default_style_"
+
 	totalCharCnt := 0
 	segmentCount := 0
+	preStyle := defaultStyle
 	tableCount := len(p.f.Tables())
 
 	paragraphs := p.f.Paragraphs()
@@ -103,16 +106,30 @@ func (p *DocxProcessor) ExtractText() error {
 		paraTmp := make(translate.Paragraph, 0, 1<<8)
 		caluText := strings.Builder{}
 		charCnt := 0
+		curStyleMap := map[string]int{preStyle: 0}
 
 		_ = p.handleRuns(runs, func(i int, run document.Run) string {
-			fmt.Println(run.Text(), run.Properties().Font(), run.Properties().Bold(), *run.Properties().GetColor().AsRGBAString(), run.Properties().SizeValue())
+			style := p.style(run)
+			curStyleMap[style]++
+
 			text := run.Text()
 			paraTmp = append(paraTmp, run.Text())
 			caluText.WriteString(text)
 			charCnt += len([]rune(text))
 			return text
 		})
-		p.paraSet = append(p.paraSet, paraTmp)
+		curStyle := p.getCurStyle(curStyleMap)
+		paraTmp = append([]string{curStyle}, paraTmp...)
+		if preStyle != defaultStyle && preStyle == curStyle {
+			// 合并到上一个段落
+			preIdx := len(p.paraSet) - 1
+			p.paraSet[preIdx] = append(p.paraSet[preIdx], paraTmp...)
+		} else {
+			// 新增段落
+			p.paraSet = append(p.paraSet, paraTmp)
+		}
+		fmt.Println("=========================================================")
+		preStyle = curStyle
 		segmentCount += len(paraTmp)
 		totalCharCnt += charCnt
 
@@ -132,6 +149,25 @@ func (p *DocxProcessor) ExtractText() error {
 		slog.Int("tables", tableCount))
 
 	return nil
+}
+
+func (p *DocxProcessor) getCurStyle(styles map[string]int) string {
+	var maxStyleCnt = -1
+	var curStyle string
+	for style, cnt := range styles {
+		if cnt > maxStyleCnt {
+			maxStyleCnt = cnt
+			curStyle = style
+		}
+	}
+	return curStyle
+}
+
+func (p *DocxProcessor) style(run document.Run) string {
+	token := fmt.Sprintf("%v:%v:%v:%v",
+		run.Properties().Font(), run.Properties().Bold(), *run.Properties().GetColor().AsRGBAString(), run.Properties().SizeValue())
+
+	return Md5(token)
 }
 
 func (p *DocxProcessor) handleRuns(runs []document.Run, f func(int, document.Run) string) []document.Run {
@@ -202,7 +238,7 @@ func (p *DocxProcessor) ProcessText() {
 				return
 			}
 			p.rw.Lock()
-			p.tranParaSet = combineMap(p.tranParaSet, fillMap(p.paraSet[i], t[startIdx:endIdx]))
+			p.tranParaSet = CombineMap(p.tranParaSet, FillMap(p.paraSet[i], t[startIdx:endIdx]))
 			p.rw.Unlock()
 		})
 	}

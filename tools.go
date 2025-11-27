@@ -1,6 +1,11 @@
 package eden
 
-func fillMap(src ...[]string) map[string]string {
+import (
+	"crypto/md5"
+	"encoding/hex"
+)
+
+func FillMap(src ...[]string) map[string]string {
 	m := map[string]string{}
 	if len(src) == 0 {
 		return m
@@ -21,7 +26,7 @@ func fillMap(src ...[]string) map[string]string {
 	return m
 }
 
-func combineMap(maps ...map[string]string) map[string]string {
+func CombineMap(maps ...map[string]string) map[string]string {
 	m := map[string]string{}
 	for _, mm := range maps {
 		for k, v := range mm {
@@ -29,4 +34,10 @@ func combineMap(maps ...map[string]string) map[string]string {
 		}
 	}
 	return m
+}
+
+func Md5(token string) string {
+	m := md5.New()
+	m.Write([]byte(token))
+	return hex.EncodeToString(m.Sum(nil))
 }
