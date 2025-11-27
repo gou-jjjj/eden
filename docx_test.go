@@ -1,6 +1,7 @@
 package eden
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/gou-jjjj/eden/prompt"
 	"github.com/gou-jjjj/eden/translate"
 	"github.com/gou-jjjj/unioffice/document"
+	"github.com/tmc/langchaingo/llms/openai"
 )
 
 func debugDelete() {
@@ -20,15 +22,22 @@ func debugDelete() {
 }
 
 func TestNewDocxProcessor(t *testing.T) {
+	llm, err := openai.New(
+		openai.WithModel("qwen-plus"),
+		openai.WithBaseURL("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+		openai.WithToken("sk-227cf58d893d4a689e82d2b8eb8f3564"),
+	)
+	o := translate.NewAiTran(context.Background(), nil, 3, llm)
+
 	pr := NewDocxProcessor(
 		WithInput("/Users/calvin/go/src/eden/file_examples/dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"),
 		WithOutput("./out"),
 		WithLang(lang.EN),
-		//WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
-		WithProcessFunc(translate.NewMockTran()),
+		//WithProcessFunc(translate.NewMockTran()),
+		WithProcessFunc(o),
 		WithMaxToken(100))
 
-	err := pr.Process()
+	err = pr.Process()
 	if err != nil {
 		t.Error(err)
 	}

@@ -170,23 +170,16 @@ func (p *DocxProcessor) handleRuns(runs []document.Run, f func(int, document.Run
 // ProcessText 处理文本内容
 func (p *DocxProcessor) ProcessText() {
 	if p.process == nil {
-		if p.elog != nil {
-			p.elog.Warn("没有设置翻译处理器，跳过翻译")
-		}
+		p.elog.Warn("没有设置翻译处理器，跳过翻译")
 		return
 	}
 
 	if len(p.paraSet) == 0 {
-		if p.elog != nil {
-			p.elog.Info("没有需要翻译的段落")
-		}
+		p.elog.Info("没有需要翻译的段落")
 		return
 	}
 
-	if p.elog != nil {
-		p.elog.Info("开始翻译段落",
-			slog.Int("paragraph_count", len(p.paraSet)))
-	}
+	p.elog.Info("开始翻译段落", slog.Int("paragraph_count", len(p.paraSet)))
 
 	plen := len(p.paraSet)
 	for i := 0; i < plen; i++ {
@@ -221,9 +214,7 @@ func (p *DocxProcessor) ProcessText() {
 
 			// 记录翻译响应
 			if err != nil {
-				p.elog.Error("翻译段落失败",
-					slog.Int("paragraph_index", paraIdx),
-					slog.String("error", err.Error()))
+				p.elog.Error("翻译段落失败", slog.Int("paragraph_index", paraIdx), slog.String("error", err.Error()))
 				return
 			}
 			p.rw.Lock()

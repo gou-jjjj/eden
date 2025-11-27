@@ -190,7 +190,7 @@ func (t *AiTran) addLog(req *TranReq, res []string) {
 	)
 }
 
-func (t *AiTran) T(req *TranReq) ([]string, error) {
+func (t *AiTran) T(req *TranReq) (Paragraph, error) {
 	err := t.translationFlow(req)
 	if err != nil {
 		return nil, err
@@ -226,6 +226,10 @@ func (t *AiTran) hasModels() bool {
 func (t *AiTran) nextModel() llms.Model {
 	t.mIdx++
 	return t.model()
+}
+
+func (t *AiTran) Name() string {
+	return "AiTranslate"
 }
 
 type (
