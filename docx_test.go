@@ -21,7 +21,7 @@ func debugDelete() {
 
 func TestNewDocxProcessor(t *testing.T) {
 	pr := NewDocxProcessor(
-		WithInput("/Users/zyb/go/src/github.com/gou-jjjj/eden/file_examples/Go20240617.docx"),
+		WithInput("/Users/calvin/go/src/eden/file_examples/dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"),
 		WithOutput("./out"),
 		WithLang(lang.EN),
 		//WithProcessFunc(translate.NewOpenaiWithLogger(translate.Ollama, newLogger, open)),
@@ -35,7 +35,7 @@ func TestNewDocxProcessor(t *testing.T) {
 }
 
 func TestContent(t *testing.T) {
-	const path = "/Users/calvin/go/src/eden/file_examples/Docx4j_GettingStarted.docx"
+	const path = "/Users/calvin/go/src/eden/file_examples/dxusercu_e43caac4e7a606e6f290e3718d67ce21.docx"
 	doc, err := document.Open(path)
 	if err != nil {
 		t.Fatal(err)

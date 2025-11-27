@@ -119,7 +119,6 @@ func (p *DocxProcessor) ExtractText() error {
 			return text
 		})
 		curStyle := p.getCurStyle(curStyleMap)
-		paraTmp = append([]string{curStyle}, paraTmp...)
 		if preStyle != defaultStyle && preStyle == curStyle {
 			// 合并到上一个段落
 			preIdx := len(p.paraSet) - 1
@@ -128,25 +127,15 @@ func (p *DocxProcessor) ExtractText() error {
 			// 新增段落
 			p.paraSet = append(p.paraSet, paraTmp)
 		}
-		fmt.Println("=========================================================")
 		preStyle = curStyle
 		segmentCount += len(paraTmp)
 		totalCharCnt += charCnt
 
-		p.elog.Info("处理段落",
-			slog.Int("paragraph_index", idx),
-			slog.Int("character_count", charCnt),
-			slog.Int("text_block_count", len(paraTmp)))
-		p.elog.Debug("处理段落内容",
-			slog.Int("paragraph_index", idx),
-			slog.String("text_content", caluText.String()))
+		p.elog.Info("处理段落", slog.Int("paragraph_index", idx), slog.Int("character_count", charCnt), slog.Int("text_block_count", len(paraTmp)))
+		p.elog.Debug("处理段落内容", slog.Int("paragraph_index", idx), slog.String("text_content", caluText.String()))
 	}
 
-	p.elog.Info("文本提取完成",
-		slog.Int("total_characters", totalCharCnt),
-		slog.Int("text_blocks", segmentCount),
-		slog.Int("paragraphs", len(paragraphs)),
-		slog.Int("tables", tableCount))
+	p.elog.Info("文本提取完成", slog.Int("total_characters", totalCharCnt), slog.Int("text_blocks", segmentCount), slog.Int("paragraphs", len(paragraphs)), slog.Int("tables", tableCount))
 
 	return nil
 }
@@ -277,9 +266,7 @@ func (p *DocxProcessor) WriteChanges() {
 // Process 执行完整的 DOCX 处理流程
 func (p *DocxProcessor) Process() error {
 	// 修复：使用正确的键值对格式
-	p.elog.Info("开始翻译文档",
-		slog.String("translator", p.process.Name()),
-		slog.String("file_name", p.fileName))
+	p.elog.Info("开始翻译文档", slog.String("translator", p.process.Name()), slog.String("file_name", p.fileName))
 
 	// 修复：正确的defer逻辑
 	if p.closeFunc != nil {
