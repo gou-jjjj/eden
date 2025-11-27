@@ -196,6 +196,9 @@ func (t *AiTran) T(req *TranReq) ([]string, error) {
 		return nil, err
 	}
 
+	if len(req.TParas) == 1 {
+		return []string{req.TranslatedText}, nil
+	}
 	err = t.splitFlow(req)
 	if err != nil {
 		return nil, err
